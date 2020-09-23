@@ -12,6 +12,8 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <maven.compiler.source>1.6</maven.compiler.source>
+ 	<maven.compiler.target>1.6</maven.compiler.target>
   </properties>
 
   <dependencies>
@@ -21,5 +23,11 @@
       <version>3.8.1</version>
       <scope>test</scope>
     </dependency>
+    <dependency>
+    	<groupId>com.mapbox.mapboxsdk</groupId>
+    	<!-- get the mapbox GeoJSON SDK -->
+    	<artifactId>mapbox-sdk-geojson</artifactId>
+    	<version>5.5.0</version>
+	</dependency>
   </dependencies>
 </project>
