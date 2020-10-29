@@ -24,7 +24,7 @@ import com.mapbox.geojson.Point;
  * @version 1.0
  *
  */
-public class Client {
+class Client {
 	
 	/**
 	 * The Java HttpClien that will be used to communicate with the server
@@ -39,7 +39,7 @@ public class Client {
 	 * 
 	 * @param port The port the client will use to communicate to the server
 	 */
-	public Client(Integer port) {
+	Client(Integer port) {
 		baseURL = "http://localhost:" + Integer.toString(port) + "/";
 	}
 	
@@ -49,7 +49,7 @@ public class Client {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public String getNoFly() throws IOException, InterruptedException{
+	String getNoFly() throws IOException, InterruptedException{
 		//sends a request for the no-fly-zones GeoJson and returns the body of the response
 		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(baseURL + "buildings/no-fly-zones.geojson")).build();
 		return client.send(request, BodyHandlers.ofString()).body();
@@ -65,7 +65,7 @@ public class Client {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public String getData(String day,String month, String year) throws IOException, InterruptedException{
+	String getData(String day,String month, String year) throws IOException, InterruptedException{
 		//sends a request for the air-quality-data on the specified day and returns the body of the response
 		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(baseURL +"/maps/"+ year + "/" + month + "/" + day + "/air-quality-data.json")).build();
 		return client.send(request, BodyHandlers.ofString()).body();
@@ -79,7 +79,7 @@ public class Client {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public Point PointFromWords(String Input) throws IOException, InterruptedException {
+	Point PointFromWords(String Input) throws IOException, InterruptedException {
 		//split the What3Words into its three components
 		String words[] = Input.split("\\.",3);
 		//use the components to build the path to the details for that What3Words location on the server and send a request for it.

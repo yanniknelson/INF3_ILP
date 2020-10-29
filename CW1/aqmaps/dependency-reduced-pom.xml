@@ -26,7 +26,7 @@
           <archive>
             <index>true</index>
             <manifest>
-              <mainClass />
+              <mainClass>uk.ac.ed.inf.aqmaps.AQMapper</mainClass>
             </manifest>
           </archive>
         </configuration>

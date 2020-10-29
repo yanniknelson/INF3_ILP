@@ -175,6 +175,12 @@ public class heatmap {
 	    
 	    //Breakdown the data from the predicted data file into a 2D array of integers we can work with
 	    predictions = breakDownData(fileData, GRIDWIDTH, GRIDHEIGHT);
+	    for (Integer[] r: predictions) {
+	    	for (Integer v: r) {
+	    		System.out.print(String.format("%d, ", v));
+	    	}
+	    	System.out.println();
+	    }
 	    
 	    List<Feature> gridList = new ArrayList<>();
 	    
