@@ -126,7 +126,7 @@ public class heatmap {
 		} else if (value < 64) {
 			return "#40ff00";
 		} else if (value < 96) {
-			return "#40ff00";
+			return "#80ff00";
 		} else if (value < 128) {
 			return "#c0ff00";
 		} else if (value < 160) {

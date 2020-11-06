@@ -5,10 +5,10 @@ import java.util.Arrays;
 
 class ConnectedGraph {
 	
-	private InitialNode startNode;
+	private Node startNode;
 	private ArrayList<Sensor> nodes;
 	
-	ConnectedGraph(InitialNode startNode, ArrayList<Sensor> nodes) {
+	ConnectedGraph(Node startNode, ArrayList<Sensor> nodes) {
 		this.startNode = startNode;
 		this.nodes = nodes;
 		this.createConnections();
@@ -25,6 +25,5 @@ class ConnectedGraph {
 			n.addConnection(startNode);
 			i++;
 		}
-		startNode.createConnections(this.nodes);
 	}
 }

@@ -29,6 +29,10 @@ import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 import com.mapbox.geojson.Polygon;
 
+import me.tongfei.progressbar.ProgressBar;
+import me.tongfei.progressbar.ProgressBarBuilder;
+import me.tongfei.progressbar.ProgressBarStyle;
+
 /**
  * The main class of the air quality mapping drone project.<br>
  * This is the class that runs when the jar is run.
@@ -155,7 +159,7 @@ public class AQMapper <T extends Node> {
 		//create the client that will handle all server communication
 		client = new Client(Integer.parseInt(args[PORTINDX]));
 		
-		InitialNode start = new InitialNode(Point.fromLngLat(Double.parseDouble(args[LONGINDX]),Double.parseDouble(args[LATTINDX])));
+		Sensor start = new Sensor("", Point.fromLngLat(Double.parseDouble(args[LONGINDX]),Double.parseDouble(args[LATTINDX])),0.0, "");
 		
 		String noFlyGeoJson;
 		//Get the no fly zone GeoJson and use it to create the feature collection
@@ -204,31 +208,68 @@ public class AQMapper <T extends Node> {
 			return;
 		}
 		
-		//create The fully connected graph required for the Travelling Salesman Solution
-		ConnectedGraph conGraph = new ConnectedGraph(start, data);
-		System.out.println("connections found");
+		data.add(0, start);
 		
-//		Connection test = (Connection) data.get(0).connections.get(data.get(4));
-//		test.AStar();
-//		System.out.println(test.getCost());
-		ArrayList<Feature> testList = new ArrayList<>();
-		for (Sensor s1 : data) {
-			for (Sensor s2 : data) {
-				if (s1 != s2) {
-					testList.addAll((ArrayList<Feature>) connectionToFeatures((Connection)s1.connections.get(s2)));
+		Integer connectionLengthsNoMap[][] = new Integer[data.size()][data.size()];
+		HashMap<Sensor, HashMap<Sensor, Integer>> connectionLengths = new HashMap<>();
+		for (Sensor s: data) {
+			connectionLengths.put(s, new HashMap<Sensor, Integer>());
+		}
+		
+		ProgressBarBuilder pbb = new ProgressBarBuilder().setStyle(ProgressBarStyle.ASCII).setUpdateIntervalMillis(1).setInitialMax(data.size()*data.size()).setTaskName("Building Connections");
+		
+		try (ProgressBar pb = pbb.build()){
+			for (Sensor s1: data) {
+				for (Sensor s2: data) {
+					if (s1==s2) {
+						connectionLengths.get(s1).put(s2, 0);
+					} else {
+						connectionLengths.get(s1).put(s2, s1.AStar(s2).size());
+					}
+					pb.step();
 				}
 			}
-			testList.addAll((ArrayList<Feature>) connectionToFeatures((Connection)s1.connections.get(start)));
 		}
-		testList.addAll(FeatureCollection.fromJson(noFlyGeoJson).features());
-		FeatureCollection testlin = FeatureCollection.fromFeatures(testList);
-		Path pathToOutput = Paths.get(System.getProperty("user.dir"), "test.geojson");
-		try {
-			Files.write(pathToOutput, testlin.toJson().getBytes());
-			System.out.println("File saved Successfully");
-		} catch (Exception e) {
-			System.out.println("Failed to write to the file heatmap.geojson");
+		
+		for (Sensor s1: data) {
+			for (Sensor s2: data) {
+				System.out.print(connectionLengths.get(s1).get(s2));
+				System.out.print(", ");
+			}
+			System.out.println();
 		}
+		
+		//create The fully connected graph required for the Travelling Salesman Solution
+//		ConnectedGraph conGraph = new ConnectedGraph(start, data);
+//		System.out.println("connections found");
+//		
+////		Connection test = (Connection) data.get(0).connections.get(data.get(4));
+////		test.AStar();
+////		System.out.println(test.getCost());
+//		ArrayList<Feature> testList = new ArrayList<>();
+//		for (Sensor s1 : data) {
+//			for (Sensor s2 : data) {
+//				if (s1 != s2) {
+//					testList.addAll((ArrayList<Feature>) connectionToFeatures((Connection)s1.connections.get(s2)));
+//					if ((((Connection) s1.connections.get(s2)).getPath().size()) != connectionLengths.get(s1).get(s2)) {
+//						System.out.println("uh oh");
+//						System.out.println((((Connection) s1.connections.get(s2)).getPath().size()));
+//						System.out.println(connectionLengths.get(s1).get(s2));
+//						System.out.println();
+//					}
+//				}
+//			}
+////			testList.addAll((ArrayList<Feature>) connectionToFeatures((Connection)s1.connections.get(start)));
+//		}
+//		testList.addAll(FeatureCollection.fromJson(noFlyGeoJson).features());
+//		FeatureCollection testlin = FeatureCollection.fromFeatures(testList);
+//		Path pathToOutput = Paths.get(System.getProperty("user.dir"), "test.geojson");
+//		try {
+//			Files.write(pathToOutput, testlin.toJson().getBytes());
+//			System.out.println("File saved Successfully");
+//		} catch (Exception e) {
+//			System.out.println("Failed to write to the file heatmap.geojson");
+//		}
 		
 	}
 
