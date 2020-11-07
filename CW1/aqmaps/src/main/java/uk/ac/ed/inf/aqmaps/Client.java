@@ -27,7 +27,8 @@ import com.mapbox.geojson.Point;
 class Client {
 	
 	/**
-	 * The Java HttpClien that will be used to communicate with the server
+	 * The Java HttpClient that will be used to communicate with the server
+	 * @see java.net.http.HttpClient
 	 */
 	private HttpClient client = HttpClient.newHttpClient();
 	
