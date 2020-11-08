@@ -26,7 +26,7 @@
           <archive>
             <index>true</index>
             <manifest>
-              <mainClass>uk.ac.ed.inf.aqmaps.AQMapper</mainClass>
+              <mainClass>uk.ac.ed.inf.aqmaps.Drone</mainClass>
             </manifest>
           </archive>
         </configuration>
