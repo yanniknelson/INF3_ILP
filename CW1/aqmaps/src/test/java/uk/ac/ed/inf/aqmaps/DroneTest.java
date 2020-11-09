@@ -17,6 +17,11 @@ public class DroneTest {
 	}
 
 	@Test
+	public void testGetCost() {
+		fail("Not yet implemented");
+	}
+
+	@Test
 	public void testACOTSP() {
 		fail("Not yet implemented");
 	}
