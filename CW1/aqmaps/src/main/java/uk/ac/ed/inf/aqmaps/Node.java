@@ -24,7 +24,7 @@ import com.mapbox.geojson.Polygon;
  * @see com.mapbox.geojson.Point
  *
  */
-public class Node <T extends Node> {
+public class Node implements Location {
 	
 	protected Point location;
 	
@@ -41,7 +41,7 @@ public class Node <T extends Node> {
 	 * @return the location (in the form of a MapBox Point).
 	 * @see com.mapbox.geojson.Point
 	 */
-	Point getLocation() {
+	public Point getLocation() {
 		return location;
 	}
 	
@@ -62,7 +62,7 @@ public class Node <T extends Node> {
 	 * @return The Distance between the passed in points as a Double.
 	 * @see com.mapbox.geojson.Point
 	 */
-	Double findDistance(Point p1, Point p2) {
+	public Double findDistance(Point p1, Point p2) {
 		return Math.sqrt(Math.pow(p1.longitude() - p2.longitude(),2) + Math.pow(p1.latitude() - p2.latitude(),2));
 	}
 	
@@ -165,8 +165,8 @@ public class Node <T extends Node> {
 	 * @param visited ArrayList of Node (or node subclass) that have already been visited and thus we don't want to be too close to.
 	 * @return mapping of possible next step from the current node to their angle relative to the current node.
 	 */
-	HashMap<Node, Integer> Reachable( ArrayList<T> visited){
-		HashMap<Node, Integer> nextPoints = new HashMap<>();
+	public HashMap<Location, Integer> Reachable( ArrayList<Location> visited) {
+		HashMap<Location, Integer> nextPoints = new HashMap<>();
 		//for all possible angles around the current point (the drone can only move at angles divisible by 5)
 		outerloop:
 		for (Integer i = 0 ; i < 360; i += 5) {
@@ -183,7 +183,7 @@ public class Node <T extends Node> {
 			Point loc = Point.fromLngLat(lon,lat);
 			
 			//If the new point is less than a step away from any of the visited points then give up on the Point at this angle
-			for (T p: visited) {
+			for (Location p: visited) {
 				if (findDistance(p.getLocation(), loc) < 0.0003) {
 					continue outerloop;
 				}
@@ -216,37 +216,56 @@ public class Node <T extends Node> {
 	 * @param end The desired destination point.
 	 * @return A list of pairs Nodes (or Node subclass) and angles representing the locations visited at each step and the angle between them.
 	 */
-	public ArrayList<Pair<T, Integer>> AStar(T end) {
+	public ArrayList<Pair<Location, Integer>> path(Location end, Double tolerance) {
 		//Create a Comparator that will compare possible paths and return an order based on the total expected cost to get to the end Point
 		AStarNodeComparison comparator = new AStarNodeComparison(end);
 		//List of all current possible paths (called branches due to the tree like nature of the search)
-		ArrayList<ArrayList<Pair<T, Integer>>> branches = new ArrayList<>();
+		ArrayList<ArrayList<Pair<Location, Integer>>> branches = new ArrayList<>();
 		//Create the first node (tree node) in the search tree containing just the current Node (or Node subclass)
-		ArrayList<Pair<T,Integer>> base = new ArrayList<Pair<T,Integer>>();
-		base.add(new Pair<T,Integer>((T) this, -1));
+		ArrayList<Pair<Location,Integer>> base = new ArrayList<Pair<Location,Integer>>();
+		base.add(new Pair<Location,Integer>((Location) this, -1));
 		//Add the first (tree) node to the branches list
 		branches.add(base);
 		//initialise the visited list to and empty ArrayList
-		ArrayList<Node> visited = new ArrayList<>();
+		ArrayList<Location> visited = new ArrayList<>();
 		//Iteratively expand upon the current best paths, then ordering the new branches and repeating until the destination is reached
 		while (true) {
 			//get the current best path
-			ArrayList<Pair<T, Integer>> current = branches.get(0);
+			ArrayList<Pair<Location, Integer>> current = branches.get(0);
 			//if the current best path is within 0.0002 degrees of the destination we've reached the destination so return the path
-			if (findDistance(current.get(current.size()-1).getValue0().getLocation(), end.getLocation()) < 0.0002) {
+			if (findDistance(current.get(current.size()-1).getValue0().getLocation(), end.getLocation()) < tolerance ) {
+				//if the current path consists of only one node then the drone hasn't moved, this would be an invalid step
+				if (current.size() == 1) {
+					//find the next nodes and check if we can move to any of them while remaining in range of the sensor
+					HashMap<Location,Integer> deviation = current.get(current.size()-1).getValue0().Reachable(visited);
+					ArrayList<Location> deviationNodes = new ArrayList<Location>(deviation.keySet());
+					Boolean oneStep = false;
+					for (Location n: deviationNodes) {
+						if (findDistance(n.getLocation(), end.getLocation()) < tolerance) {
+							current.add(new Pair<Location, Integer>(n, deviation.get(n)));
+							oneStep = true;
+							break;
+						}
+					}
+					//if we can't then choose any next point, move there and move back
+					if (!oneStep) {
+						current.add(new Pair<Location, Integer>(deviationNodes.get(0), deviation.get(deviationNodes.get(0))));
+						current.add(current.get(0));
+					}
+				}
 				return current;
 			}
 			//otherwise get the list of next possible points, use them to create the next possible branches and add them all to the branches list
-			HashMap<T, Integer> available = current.get(current.size()-1).getValue0().Reachable(visited);
-			ArrayList<T> nodes = new ArrayList<T>(available.keySet());
+			HashMap<Location, Integer> available = current.get(current.size()-1).getValue0().Reachable(visited);
+			ArrayList<Location> nodes = new ArrayList<Location>(available.keySet());
 			//remember to remove the branch we just expanded
 			branches.remove(current);
-			for (T n: nodes) {
+			for (Location n: nodes) {
 				if (visited.contains(n)) {
 					continue;
 				}
-				ArrayList<Pair<T,Integer>> temp = (ArrayList<Pair<T, Integer>>) current.clone();
-				temp.add(new Pair<T,Integer>(n, available.get(n)));
+				ArrayList<Pair<Location,Integer>> temp = (ArrayList<Pair<Location, Integer>>) current.clone();
+				temp.add(new Pair<Location,Integer>(n, available.get(n)));
 				branches.add(temp);
 			}
 			//sort the new branches based on their expected cost
@@ -262,7 +281,7 @@ public class Node <T extends Node> {
 	 * @param goal The desired destination Node
 	 * @return The exact number of expected steps if the Drone could move to the goal in a straight line as a Double
 	 */
-	Double getHeuristic(T goal) {
+	public Double getHeuristic(Location goal) {
 		return findDistance(this.location, goal.getLocation())/Drone.STEPSIZE;
 	}
 	
@@ -275,21 +294,21 @@ public class Node <T extends Node> {
  *
  * @param <T>
  */
-class AStarNodeComparison <T extends Node> implements Comparator<ArrayList<Pair<T, Integer>>>  {
+class AStarNodeComparison implements Comparator<ArrayList<Pair<Location, Integer>>>  {
 	
-	T goal;
+	Location goal;
 	/**
 	 * 
 	 * @param goal The desired destination Node. This is required to calculate the cost and cannot be passed in at time of comparison
 	 */
-	AStarNodeComparison(T goal){
+	AStarNodeComparison(Location goal){
 		this.goal = goal;
 	}
 	
 	/**
 	 * Returns the ordering of the paths based off of their total expected costs
 	 */
-	public int compare(ArrayList<Pair<T, Integer>> a, ArrayList<Pair<T, Integer>> b) {
+	public int compare(ArrayList<Pair<Location, Integer>> a, ArrayList<Pair<Location, Integer>> b) {
 		//I scale the heuristics here to emphasise their difference
 		//I do this as the restriction of only moving at angles that divide by 5 means taking a step sometimes adds more to the f value than is lost in the heuristic from the new end node
 		//This means it has to go back and check the old values that are now better, to fix this I scale the heuristic by the biggest number i can while keeping the heuristic mostly consistent
