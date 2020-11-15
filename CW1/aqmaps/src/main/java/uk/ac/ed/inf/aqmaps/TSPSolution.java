@@ -11,12 +11,12 @@ import me.tongfei.progressbar.ProgressBarStyle;
 class TSPSolution implements TSPSolver {
 
 	public TSPSolution() {
-		// TODO Auto-generated constructor stub
 	}
 
 	@Override
-	public ArrayList<Sensor> solve(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> sensors, Location start) {
-		// TODO Auto-generated method stub
+	public ArrayList<Sensor> solve(ArrayList<Sensor> sensors, Location start) {
+		//create The fully connected graph representation required for the Travelling Salesman Solution
+		HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix = ConnectionMatrix(sensors);
 		ArrayList<Sensor> order = ACOTSP(connectionMatrix, sensors);
 		System.out.println(String.format("Estimated Tour Step Cost After Ant Colony: %d", getCost(connectionMatrix, order)));
 		Two_OPT(connectionMatrix, order);
@@ -36,7 +36,7 @@ class TSPSolution implements TSPSolver {
 	 * @param destinations ArrayList of Sensors to be visited (includes the starting location as a Sensor)
 	 * @return A Mapping from any Sensor to a Mapping from any other sensor to the best number of steps between them + 1
 	 */
-	public HashMap<Sensor, HashMap<Sensor, Integer>> ConnectionMatrix(ArrayList<Sensor> destinations) {
+	HashMap<Sensor, HashMap<Sensor, Integer>> ConnectionMatrix(ArrayList<Sensor> destinations) {
 		
 		//Initialise each row (or row of the 2D HashMap)
 		HashMap<Sensor, HashMap<Sensor, Integer>> connectionLengths = new HashMap<>();
@@ -63,6 +63,18 @@ class TSPSolution implements TSPSolver {
 					pb.step();
 				}
 			}
+			//Display the connectionLengths Matrix highlighting that it is not a diagonal matrix by putting [] around pairs that would match but don't
+			System.out.println("Estimated Connection Step Costs:");
+			for (Sensor s1: destinations) {
+				for (Sensor s2: destinations) {
+					if (connectionLengths.get(s1).get(s2) != connectionLengths.get(s2).get(s1)) {
+						System.out.print(String.format("[%2d],", connectionLengths.get(s1).get(s2)));
+					} else {
+						System.out.print(String.format(" %2d ,", connectionLengths.get(s1).get(s2)));
+					}
+				}
+				System.out.println();
+			}
 		}
 		
 		return connectionLengths;
@@ -76,7 +88,7 @@ class TSPSolution implements TSPSolver {
 	 * @param path The path who's cost is desired
 	 * @return The estimated cost in drone steps of the path
 	 */
-	public Integer getCost(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> path) {
+	Integer getCost(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> path) {
 		Integer totalLength = 0;
 		for (Integer j = 1; j < path.size(); j++) {
 			totalLength += connectionMatrix.get(path.get(j-1)).get(path.get(j));
@@ -92,7 +104,7 @@ class TSPSolution implements TSPSolver {
 	 * @param Sensors List of Locations to visit
 	 * @return
 	 */
-	public ArrayList<Sensor> ACOTSP(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> sensors) {
+	ArrayList<Sensor> ACOTSP(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> sensors) {
 		//Q constant for tour length pheromone update
 		Double Q = 1.0;
 		//pheromone evaporation rate
@@ -218,7 +230,7 @@ class TSPSolution implements TSPSolver {
 	 * @param connectionMatrix Matrix of distances between nodes
 	 * @param ordering Initial ordering of locations to visit
 	 */
-	public void Two_OPT(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> ordering) {
+	void Two_OPT(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> ordering) {
 		Boolean better = true;
 		//run through all subsections of the ordering and check if reversing it improves the path length
 		//if the ordering improves then run through all subsections again until no improvement is found

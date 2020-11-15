@@ -40,25 +40,7 @@ public class AStarPather implements Pather {
 			ArrayList<Pair<Location, Integer>> current = branches.get(0);
 			//if the current best path is within 0.0002 degrees of the destination we've reached the destination so return the path
 			if (findDistance(current.get(current.size()-1).getValue0().getLocation(), end.getLocation()) < tolerance ) {
-				//if the current path consists of only one node then the drone hasn't moved, this would be an invalid step
-//				if (current.size() == 1) {
-//					//find the next nodes and check if we can move to any of them while remaining in range of the sensor
-//					HashMap<Location,Integer> deviation = current.get(current.size()-1).getValue0().Reachable(visited);
-//					ArrayList<Location> deviationNodes = new ArrayList<Location>(deviation.keySet());
-//					Boolean oneStep = false;
-//					for (Location n: deviationNodes) {
-//						if (findDistance(n.getLocation(), end.getLocation()) < tolerance) {
-//							current.add(new Pair<Location, Integer>(n, deviation.get(n)));
-//							oneStep = true;
-//							break;
-//						}
-//					}
-//					//if we can't then choose any next point, move there and move back
-//					if (!oneStep) {
-//						current.add(new Pair<Location, Integer>(deviationNodes.get(0), deviation.get(deviationNodes.get(0))));
-//						current.add(current.get(0));
-//					}
-//				}
+				//if the current path consists of only one node try and move once more, if it doesn't work pick a random next point move there and move back
 				if (current.size() == 1) {
 					if (triedAgain) {
 						HashMap<Location,Integer> deviation = Reachable(current.get(current.size()-1).getValue0(), new ArrayList<Location>());

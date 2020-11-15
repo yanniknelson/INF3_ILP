@@ -2,7 +2,6 @@ package uk.ac.ed.inf.aqmaps;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 
 import java.util.Random;
@@ -26,10 +25,6 @@ import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.LineString;
 import com.mapbox.geojson.Point;
 import com.mapbox.geojson.Polygon;
-
-import me.tongfei.progressbar.ProgressBar;
-import me.tongfei.progressbar.ProgressBarBuilder;
-import me.tongfei.progressbar.ProgressBarStyle;
 
 /**
  * The main class of the air quality mapping drone project.<br>
@@ -250,32 +245,8 @@ public class Drone {
 			return;
 		}
 		
-		//create The fully connected graph representation required for the Travelling Salesman Solution
-		HashMap<Sensor, HashMap<Sensor, Integer>> connectionLengths = tsp.ConnectionMatrix(data);
-		
-		//Display the connectionLengths Matrix highlighting that it is not a diagonal matrix by putting [] around pairs that would match but don't
-		System.out.println("Estimated Connection Step Costs:");
-		for (Sensor s1: data) {
-			for (Sensor s2: data) {
-				if (connectionLengths.get(s1).get(s2) != connectionLengths.get(s2).get(s1)) {
-					System.out.print(String.format("[%2d],", connectionLengths.get(s1).get(s2)));
-				} else {
-					System.out.print(String.format(" %2d ,", connectionLengths.get(s1).get(s2)));
-				}
-			}
-			System.out.println();
-		}
-		
-//		ArrayList<Sensor> order = tsp.ACOTSP(connectionLengths, data);
-//		System.out.println(String.format("Estimated Tour Step Cost: %d", tsp.getCost(connectionLengths, order)));
-//		tsp.Two_OPT(connectionLengths, order);
-//		System.out.println(String.format("Estimated Tour Step Cost: %d", tsp.getCost(connectionLengths, order)));
-//		Integer startIndex = order.indexOf(start);
-//		ArrayList<Sensor> centeredOrder = new ArrayList<>();
-//		for (Integer i = 0; i < order.size(); i++) {
-//			centeredOrder.add(order.get((startIndex+i)%order.size()));
-//		}
-		ArrayList<Sensor> centeredOrder = tsp.solve(connectionLengths, data, start);
+		//Get the order of sensors to visit
+		ArrayList<Sensor> centeredOrder = tsp.solve(data, start);
 		String outputLog = "";
 		ArrayList<Pair<Location, Integer>> path = new ArrayList<>();
 		path.add(new Pair<Location, Integer>(centeredOrder.get(0),0));
