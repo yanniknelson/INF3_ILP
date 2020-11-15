@@ -24,7 +24,7 @@ import com.mapbox.geojson.Point;
  * @version 1.0
  *
  */
-class Client {
+class Client implements ClientWrapper{
 	
 	/**
 	 * The Java HttpClient that will be used to communicate with the server
@@ -50,7 +50,7 @@ class Client {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	String getNoFly() throws IOException, InterruptedException{
+	public String getNoFly() throws IOException, InterruptedException {
 		//sends a request for the no-fly-zones GeoJson and returns the body of the response
 		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(baseURL + "buildings/no-fly-zones.geojson")).build();
 		return client.send(request, BodyHandlers.ofString()).body();
@@ -66,7 +66,7 @@ class Client {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	String getData(String day,String month, String year) throws IOException, InterruptedException{
+	public String getData(String day,String month, String year) throws IOException, InterruptedException {
 		//sends a request for the air-quality-data on the specified day and returns the body of the response
 		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(baseURL +"/maps/"+ year + "/" + month + "/" + day + "/air-quality-data.json")).build();
 		return client.send(request, BodyHandlers.ofString()).body();
@@ -80,7 +80,7 @@ class Client {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	Point PointFromWords(String Input) throws IOException, InterruptedException {
+	public Point PointFromWords(String Input) throws IOException, InterruptedException {
 		//split the What3Words into its three components
 		String words[] = Input.split("\\.",3);
 		//use the components to build the path to the details for that What3Words location on the server and send a request for it.

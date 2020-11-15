@@ -237,7 +237,7 @@ public class Node implements Location {
 				//if the current path consists of only one node then the drone hasn't moved, this would be an invalid step
 				if (current.size() == 1) {
 					//find the next nodes and check if we can move to any of them while remaining in range of the sensor
-					HashMap<Location,Integer> deviation = current.get(current.size()-1).getValue0().Reachable(visited);
+					HashMap<Location,Integer> deviation = current.get(current.size()-1).getValue0().Reachable(new ArrayList<Location>());
 					ArrayList<Location> deviationNodes = new ArrayList<Location>(deviation.keySet());
 					Boolean oneStep = false;
 					for (Location n: deviationNodes) {
@@ -288,36 +288,4 @@ public class Node implements Location {
 }
 
 
-/**
- * Custom comparator for comparing paths based on the total expected cost of said paths
- * @author Yannik Nelson
- *
- * @param <T>
- */
-class AStarNodeComparison implements Comparator<ArrayList<Pair<Location, Integer>>>  {
-	
-	Location goal;
-	/**
-	 * 
-	 * @param goal The desired destination Node. This is required to calculate the cost and cannot be passed in at time of comparison
-	 */
-	AStarNodeComparison(Location goal){
-		this.goal = goal;
-	}
-	
-	/**
-	 * Returns the ordering of the paths based off of their total expected costs
-	 */
-	public int compare(ArrayList<Pair<Location, Integer>> a, ArrayList<Pair<Location, Integer>> b) {
-		//I scale the heuristics here to emphasise their difference
-		//I do this as the restriction of only moving at angles that divide by 5 means taking a step sometimes adds more to the f value than is lost in the heuristic from the new end node
-		//This means it has to go back and check the old values that are now better, to fix this I scale the heuristic by the biggest number i can while keeping the heuristic mostly consistent
-		Double ah = a.get(a.size()-1).getValue0().getHeuristic(this.goal);
-		Double bh = b.get(b.size()-1).getValue0().getHeuristic(this.goal);
-		//To try and keep the heuristic consistent I assume the realistic length will be the ceiling of the heuristic (the distance to the point divided by the step size)
-		//I then divide those by their actual heuristic and take the minimum of the two values to find the amount i can scale the heuristics to keep them consistent (based on the above assumption) 
-		Double scale = Math.min(Math.ceil(ah)/ah, Math.ceil(bh)/bh);
-		Double fa = a.size() - 1 + ah*scale;
-		return fa.compareTo(b.size() - 1 + bh*scale);
-	}
-}
+

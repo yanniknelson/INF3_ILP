@@ -2,6 +2,7 @@ package uk.ac.ed.inf.aqmaps;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 
 import java.util.Random;
@@ -46,7 +47,7 @@ public class Drone {
 	private static GsonBuilder gsonBuilder = new GsonBuilder();
 	private static Gson SensorGson;
 	//Custom deserializer for the Sensor Json that makes converting the Json to Sensor Objects easier
-	private static JsonDeserializer<SensorNode> deserializer = new JsonDeserializer<SensorNode>() {
+	private static JsonDeserializer<Sensor> deserializer = new JsonDeserializer<Sensor>() {
 		@Override
 		public SensorNode deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context) throws JsonParseException {
 	        JsonObject jsonObject = json.getAsJsonObject();
@@ -92,7 +93,7 @@ public class Drone {
 	
 	static ArrayList<ArrayList<Point>> boundingBoxes = new ArrayList<>();
 	static HashMap<ArrayList<Point>, ArrayList<Point>> noFlyZones = new HashMap<>();
-	private static ArrayList<SensorNode> data;
+	private static ArrayList<Sensor> data;
 	private static Type listType = new TypeToken<ArrayList<SensorNode>>() {}.getType();
 	
 	/**
@@ -141,20 +142,20 @@ public class Drone {
 	 * @param destinations ArrayList of Sensors to be visited (includes the starting location as a Sensor)
 	 * @return A Mapping from any Sensor to a Mapping from any other sensor to the best number of steps between them + 1
 	 */
-	static HashMap<SensorNode, HashMap<SensorNode, Integer>> ConnectionMatrix(ArrayList<SensorNode> destinations) {
+	static HashMap<Sensor, HashMap<Sensor, Integer>> ConnectionMatrix(ArrayList<Sensor> destinations) {
 		
 		//Initialise each row (or row of the 2D HashMap)
-		HashMap<SensorNode, HashMap<SensorNode, Integer>> connectionLengths = new HashMap<>();
-		for (SensorNode s: destinations) {
-			connectionLengths.put(s, new HashMap<SensorNode, Integer>());
+		HashMap<Sensor, HashMap<Sensor, Integer>> connectionLengths = new HashMap<>();
+		for (Sensor s: destinations) {
+			connectionLengths.put(s, new HashMap<Sensor, Integer>());
 		}
 		
 		//Create a new progress bar
 		ProgressBarBuilder pbb = new ProgressBarBuilder().setStyle(ProgressBarStyle.ASCII).setUpdateIntervalMillis(1).setInitialMax(destinations.size()*destinations.size()).setTaskName("Building Connections");
 		try (ProgressBar pb = pbb.build()){
 			//For every combination of Sensors (where order matters) 
-			for (SensorNode s1: destinations) {
-				for (SensorNode s2: destinations) {
+			for (Sensor s1: destinations) {
+				for (Sensor s2: destinations) {
 					//If the sensors are the same (we're on the diagonal of the matrix) store 0
 					//otherwise find the path from the row sensor to the column sensor and store its length 
 					//(this is the number of steps +1 as the A* assumes starting exactly at each sensor which will not be the case for the final route, this way allows an extra step to make up the difference)
@@ -181,7 +182,7 @@ public class Drone {
 	 * @param path The path who's cost is desired
 	 * @return The estimated cost in drone steps of the path
 	 */
-	static Integer getCost(HashMap<SensorNode, HashMap<SensorNode, Integer>> connectionMatrix, ArrayList<SensorNode> path) {
+	static Integer getCost(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> path) {
 		Integer totalLength = 0;
 		for (Integer j = 1; j < path.size(); j++) {
 			totalLength += connectionMatrix.get(path.get(j-1)).get(path.get(j));
@@ -193,23 +194,23 @@ public class Drone {
 	/**
 	 * Ant Colony Optimisation Algorithm for the Travelling Salesman Problem
 	 * 
-	 * @param connectionMatrix
-	 * @param Sensors
+	 * @param connectionMatrix Matrix of distances between nodes
+	 * @param Sensors List of Locations to visit
 	 * @return
 	 */
-	static ArrayList<SensorNode> ACOTSP(HashMap<SensorNode, HashMap<SensorNode, Integer>> connectionMatrix, ArrayList<SensorNode> sensors) {
+	static ArrayList<Sensor> ACOTSP(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> sensors) {
 		//Q constant for tour length pheromone update
 		Double Q = 1.0;
 		//pheromone evaporation rate
 		Double evap = 0.1;
 		//initial bestLength and best route (set to 1000 to ensure it's large than any intial route and a new arraylist to ensure compilation)
 		Integer bestLength = 1000;
-		ArrayList<SensorNode> bestRoute = new ArrayList<>();
+		ArrayList<Sensor> bestRoute = new ArrayList<>();
 		//Create and initialise the pheromone map to have a pheromone of 1 on all connecitons
-		HashMap<SensorNode, HashMap<SensorNode, Double>> pheromone = new HashMap<>();
-		for (SensorNode s1: sensors) {
-			pheromone.put(s1, new HashMap<SensorNode, Double>());
-			for (SensorNode s2: sensors) {
+		HashMap<Sensor, HashMap<Sensor, Double>> pheromone = new HashMap<>();
+		for (Sensor s1: sensors) {
+			pheromone.put(s1, new HashMap<Sensor, Double>());
+			for (Sensor s2: sensors) {
 				pheromone.get(s1).put(s2, 1.0);
 			}
 		}
@@ -226,33 +227,33 @@ public class Drone {
 		//Run the Ant simulation 100 times
 		for (Integer t = 0; t < 100; t++) {
 			//Create a new list of ants, represented as an ArrayLists of sensors the visited sensors in the order they were visited by that ant
-			ArrayList<ArrayList<SensorNode>> ants = new ArrayList<>();
+			ArrayList<ArrayList<Sensor>> ants = new ArrayList<>();
 			for (int i = 0; i < k; i++) {
 				//Initialise the ant with an empty list for visited Sensors and a clone of the sensors list as the available Sensors
-				ants.add(new ArrayList<SensorNode>());
-				ArrayList<SensorNode> ant = ants.get(i);
+				ants.add(new ArrayList<Sensor>());
+				ArrayList<Sensor> ant = ants.get(i);
 				//Initialise a clone of the sensors list to be used as a list of the available Sensors for the ant (the sensors the ant hans't visited yet)
-				ArrayList<SensorNode> possibleNext = (ArrayList<SensorNode>) sensors.clone();
+				ArrayList<Sensor> possibleNext = (ArrayList<Sensor>) sensors.clone();
 				//Pick a random starting Sensor, add it to the visited list and remove it from the available sensors
-				SensorNode firstSensor = sensors.get(generator.nextInt(n));
+				Sensor firstSensor = sensors.get(generator.nextInt(n));
 				ant.add(firstSensor);
 				possibleNext.remove(firstSensor);
 				//Build the ant's tour probabilistically 
 				while (possibleNext.size() > 0) {
 					//get the current Sensor and sensors still available
-					SensorNode current = ant.get(ant.size() - 1);
+					Sensor current = ant.get(ant.size() - 1);
 					//Find the sum of the path weightings for the available Sensors
 					Double sumWeight = 0.0;
-					for (SensorNode s: possibleNext) {
+					for (Sensor s: possibleNext) {
 						sumWeight +=  Math.pow(pheromone.get(current).get(s), a) * Math.pow((1.0/connectionMatrix.get(current).get(s)),b);
 					}
 					//Pick a random value between 0 and 1
 					Double p = generator.nextDouble();
 					Double cumProb = 0.0;
-					SensorNode next = possibleNext.get(0);
+					Sensor next = possibleNext.get(0);
 					//For each sensor, if the random value chosen is less than or equal to the cumulative probability of available Sensors so far, choose that sensor next
 					//This produces the desired distribution
-					for (SensorNode s: possibleNext) {
+					for (Sensor s: possibleNext) {
 						//The probability of next sensor being chosen is it's weighting divided by the sum of the weightings of all the possible next sensors
 						cumProb +=  ((Math.pow(pheromone.get(current).get(s), a) * Math.pow((1.0/connectionMatrix.get(current).get(s)),b))/sumWeight);
 						if (p <= cumProb) {
@@ -269,15 +270,15 @@ public class Drone {
 			}
 			
 			//Apply the evaporation to the pheromones on the connections
-			for (SensorNode s1: sensors) {
-				for (SensorNode s2: sensors) {
+			for (Sensor s1: sensors) {
+				for (Sensor s2: sensors) {
 					pheromone.get(s1).put(s2, pheromone.get(s1).get(s2) * (1-evap));
 				}
 			}
 			//add pheromone to every connection travelled, proportional to the tour lengths of each path that used said connection
 			//this is done by looking at every ant, finding its tour length and then adding Q/(the tour length) to every connection used
 			for (int i = 0; i < k; i++) {
-				ArrayList<SensorNode> path = ants.get(i);
+				ArrayList<Sensor> path = ants.get(i);
 				Integer totalLength = getCost(connectionMatrix, path);
 				//if the path currently being looked at is better than the previous best, store it and its length
 				if (totalLength < bestLength) {
@@ -294,34 +295,56 @@ public class Drone {
 		return bestRoute;
 	}
 	
-//	static Boolean tryReverse(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> list, Integer start, Integer end) {
-//		Integer Initial = connectionMatrix.get(list.get((start-1)%list.size())).get(list.get(start)) + connectionMatrix.get(list.get(end)).get(list.get((end+1)%list.size()));
-//		Collections.reverse(list);
-//		return false;
-//	}
+	/**
+	 * Convenience function for checking if reversing a subsection of a passed in order will improve the path length of the order
+	 * 
+	 * @param connectionMatrix Matrix of distances between nodes
+	 * @param list Current ordering
+	 * @param i Start index of subsection
+	 * @param j End index of subsection
+	 * @return A boolean representing if the verse of the subsection was better than the original
+	 */
+	static Boolean tryReverse(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> list, Integer i, Integer j) {
+		//initial path length
+		Integer Initial = getCost(connectionMatrix, list);
+		//reverse the subsection
+		Collections.reverse(list.subList(i,j));
+		//if the new path length is lower than the initial path length then return true and leave the order with the reversed subsection
+		if (getCost(connectionMatrix, list) < Initial) {
+			return true;
+		}
+		//otherwise undo the subsection reverse and return false
+		Collections.reverse(list.subList(i,j));
+		return false;
+	}
 	
-//	static ArrayList<Sensor> Two_OPT(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> ordering) {
-//		Boolean better = true;
-//		while (better) {
-//			better = false;
-//			for (Integer j = 1; j < ordering.size(); j++) {
-//				for (Integer i = 0; i < j; i++) {
-//					if (tryReverse(connectionMatrix, ordering, i, j)) {
-//						better = true;
-//					}
-//				}
-//			}
-//		}
-//		return ordering;
-//	}
+	/**
+	 * Two-Opt heuristic algorithm for TSP solution, all changes to the ordering are done 'in-place'
+	 * 
+	 * @param connectionMatrix Matrix of distances between nodes
+	 * @param ordering Initial ordering of locations to visit
+	 */
+	static void Two_OPT(HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix, ArrayList<Sensor> ordering) {
+		Boolean better = true;
+		//run through all subsections of the ordering and check if reversing it improves the path length
+		//if the ordering improves then run through all subsections again until no improvement is found
+		while (better) {
+			better = false;
+			for (Integer j = 1; j < ordering.size(); j++) {
+				for (Integer i = 0; i < j; i++) {
+					better = tryReverse(connectionMatrix, ordering, i, j);
+				}
+			}
+		}
+	}
 	
 	/**
 	 * Method to convert a visited Sensor into a Feature with the appropriate properties
 	 * 
-	 * @param SensorNode we have visted and would like the feature and properties of
+	 * @param Sensor we have visted and would like the feature and properties of
 	 * @return Feature corresponding to the Sensor and the appropriate features
 	 */
-	static Feature getVisitedSensorFeature(SensorNode sensor) {
+	static Feature getVisitedSensorFeature(Sensor sensor) {
 		//create the feature and add the location property with the value of the what3words location of the sensor
 		Feature sensorPoint = Feature.fromGeometry(sensor.getLocation());
 		sensorPoint.addStringProperty("location", sensor.getWhat3words());
@@ -378,7 +401,7 @@ public class Drone {
 		//create the client that will handle all server communication
 		client = new Client(Integer.parseInt(args[PORTINDX]));
 		
-		SensorNode start = new SensorNode("", Point.fromLngLat(Double.parseDouble(args[LONGINDX]),Double.parseDouble(args[LATTINDX])),0.0, "");
+		Sensor start = new SensorNode("", Point.fromLngLat(Double.parseDouble(args[LONGINDX]),Double.parseDouble(args[LATTINDX])),0.0, "");
 		
 		String noFlyGeoJson;
 		//Get the no fly zone GeoJson and create the structures used to check collision
@@ -428,12 +451,12 @@ public class Drone {
 		}
 		
 		//create The fully connected graph representation required for the Travelling Salesman Solution
-		HashMap<SensorNode, HashMap<SensorNode, Integer>> connectionLengths = ConnectionMatrix(data);
+		HashMap<Sensor, HashMap<Sensor, Integer>> connectionLengths = ConnectionMatrix(data);
 		
 		//Display the connectionLengths Matrix highlighting that it is not a diagonal matrix by putting [] around pairs that would match but don't
 		System.out.println("Estimated Connection Step Costs:");
-		for (SensorNode s1: data) {
-			for (SensorNode s2: data) {
+		for (Sensor s1: data) {
+			for (Sensor s2: data) {
 				if (connectionLengths.get(s1).get(s2) != connectionLengths.get(s2).get(s1)) {
 					System.out.print(String.format("[%2d],", connectionLengths.get(s1).get(s2)));
 				} else {
@@ -443,27 +466,22 @@ public class Drone {
 			System.out.println();
 		}
 		
-		ArrayList<SensorNode> order = ACOTSP(connectionLengths, data);
+		ArrayList<Sensor> order = ACOTSP(connectionLengths, data);
 		System.out.println(String.format("Estimated Tour Step Cost: %d",getCost(connectionLengths, order)));
-//		order.remove(order.size()-1);
+		Two_OPT(connectionLengths, order);
+		System.out.println(String.format("Estimated Tour Step Cost: %d",getCost(connectionLengths, order)));
 		Integer startIndex = order.indexOf(start);
-		ArrayList<SensorNode> centeredOrder = new ArrayList<>();
+		ArrayList<Sensor> centeredOrder = new ArrayList<>();
 		for (Integer i = 0; i < order.size(); i++) {
 			centeredOrder.add(order.get((startIndex+i)%order.size()));
 		}
-//		centeredOrder.add(centeredOrder.get(0));
-		System.out.println(centeredOrder.get(0));
-		System.out.println(String.format("Estimated Tour Step Cost: %d",getCost(connectionLengths, order)));
-		
 		String outputLog = "";
 		ArrayList<Pair<Location, Integer>> path = new ArrayList<>();
 		path.add(new Pair<Location, Integer>(centeredOrder.get(0),0));
 		Integer linenum = 1;
 		for (Integer i = 1; i < centeredOrder.size(); i++) {
 			ArrayList<Pair<Location, Integer>> route = path.get(path.size()-1).getValue0().path(centeredOrder.get(i), 0.0002);
-			System.out.println(route.size());
 			for (Integer j = 1; j < route.size(); j++) {
-//				System.out.println("lines added");
 				Location from = route.get(j-1).getValue0();
 				Location to = route.get(j).getValue0();
 				String ln = Integer.toString(linenum) + "," + Double.toString(from.getLocation().longitude()) + "," + Double.toString(from.getLocation().latitude()) + "," + Integer.toString(route.get(j).getValue1()) + "," + Double.toString(to.getLocation().longitude()) + "," + Double.toString(to.getLocation().latitude()) + ",";
@@ -476,25 +494,11 @@ public class Drone {
 				outputLog += ln;
 				linenum++;
 			}
-			if (route.size() == 1) {
-				System.out.println("fail");
-//				System.out.println("lines added");
-				Location from = route.get(0).getValue0();
-				Location to = route.get(0).getValue0();
-				String ln = Integer.toString(linenum) + "," + Double.toString(from.getLocation().longitude()) + "," + Double.toString(from.getLocation().latitude()) + "," + Integer.toString(0) + "," + Double.toString(to.getLocation().longitude()) + "," + Double.toString(to.getLocation().latitude()) + ",";
-				ln += centeredOrder.get(i).getWhat3words();
-				ln += "\n";
-				outputLog += ln;
-				System.out.println(String.format("lineNumber: %d", linenum));
-				linenum++;
-			}
 			route.remove(0);
-			System.out.println(route.size());
 			path.addAll(route);
 		}
 		ArrayList<Pair<Location, Integer>> route = path.get(path.size()-1).getValue0().path(centeredOrder.get(0),0.0003);
 		for (Integer j = 1; j < route.size(); j++) {
-			System.out.println("lines added");
 			Location from = route.get(j-1).getValue0();
 			Location to = route.get(j).getValue0();
 			String ln = Integer.toString(linenum) + "," + Double.toString(from.getLocation().longitude()) + "," + Double.toString(from.getLocation().latitude()) + "," + Integer.toString(route.get(j).getValue1()) + "," + Double.toString(to.getLocation().longitude()) + "," + Double.toString(to.getLocation().latitude()) + ",";
@@ -508,8 +512,8 @@ public class Drone {
 		route.remove(0);
 		path.addAll(route);
 		
-		System.out.println(path.size());
-		
+		System.out.println(String.format("Final Step Count: %s", linenum));
+		System.out.println(String.format("Final Path Length: %s", path.size()));
 		ArrayList<Feature> testList = new ArrayList<>();
 		ArrayList<Point> line = new ArrayList<>();
 		
@@ -517,13 +521,8 @@ public class Drone {
 			line.add(p.getValue0().getLocation());
 		}
 		
-		
-//		for (SensorNode s: centeredOrder) {
-//			line.add(s.getLocation());
-//		}
-		
 		testList.add(Feature.fromGeometry(LineString.fromLngLats(line)));
-		for (SensorNode s: data) {
+		for (Sensor s: data) {
 			if (s != start) {
 				testList.add(getVisitedSensorFeature(s));
 			}
