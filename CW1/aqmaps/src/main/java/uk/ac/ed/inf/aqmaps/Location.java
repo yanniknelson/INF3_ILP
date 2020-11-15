@@ -1,12 +1,21 @@
 package uk.ac.ed.inf.aqmaps;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-
-import org.javatuples.Pair;
-
-import com.mapbox.geojson.Point;
-
+/**
+ * Internal representation of a map point
+ * 
+ * @author Yannik Nelson
+ *
+ */
 interface Location {
-	Point getLocation();
+	/**
+	 * 
+	 * @return The longitude value of the Location
+	 */
+	Double longitude();
+	
+	/**
+	 * 
+	 * @return The latitude value of the Location
+	 */
+	Double latitude();
 }

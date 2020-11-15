@@ -43,7 +43,6 @@ class TSPSolution implements TSPSolver {
 		for (Sensor s: destinations) {
 			connectionLengths.put(s, new HashMap<Sensor, Integer>());
 		}
-		
 		//Create a new progress bar
 		ProgressBarBuilder pbb = new ProgressBarBuilder().setStyle(ProgressBarStyle.ASCII).setUpdateIntervalMillis(1).setInitialMax(destinations.size()*destinations.size()).setTaskName("Building Connections");
 		try (ProgressBar pb = pbb.build()){
@@ -64,19 +63,18 @@ class TSPSolution implements TSPSolver {
 				}
 			}
 			//Display the connectionLengths Matrix highlighting that it is not a diagonal matrix by putting [] around pairs that would match but don't
-			System.out.println("Estimated Connection Step Costs:");
-			for (Sensor s1: destinations) {
-				for (Sensor s2: destinations) {
-					if (connectionLengths.get(s1).get(s2) != connectionLengths.get(s2).get(s1)) {
-						System.out.print(String.format("[%2d],", connectionLengths.get(s1).get(s2)));
-					} else {
-						System.out.print(String.format(" %2d ,", connectionLengths.get(s1).get(s2)));
-					}
-				}
-				System.out.println();
-			}
 		}
-		
+		System.out.println("Estimated Connection Step Costs:");
+		for (Sensor s1: destinations) {
+			for (Sensor s2: destinations) {
+				if (connectionLengths.get(s1).get(s2) != connectionLengths.get(s2).get(s1)) {
+					System.out.print(String.format("[%2d],", connectionLengths.get(s1).get(s2)));
+				} else {
+					System.out.print(String.format(" %2d ,", connectionLengths.get(s1).get(s2)));
+				}
+			}
+			System.out.println();
+		}
 		return connectionLengths;
 	}
 
