@@ -2,10 +2,10 @@ package uk.ac.ed.inf.aqmaps;
 
 /**
  * 
- * Minimum required internal representation of a Sensor
+ * Minimum required internal representation of a Sensor extends the Location interface
  * 
  * @author Yannik Nelson
- *
+ * @see Location
  */
 interface Sensor extends Location{
 	

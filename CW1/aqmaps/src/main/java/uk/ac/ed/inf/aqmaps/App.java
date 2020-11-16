@@ -1,13 +1,50 @@
 package uk.ac.ed.inf.aqmaps;
 
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Random;
+
 /**
- * Hello world!
+ * Main Class used to create the required objects and call the plan fly and output functions for the Drone based on the arguements
  *
  */
 public class App 
 {
-    public static void main( String[] args )
-    {
-        System.out.println( "Hello World!" );
+	
+	//Constants that hold the boundaries of the area we can fly in
+	static final Double UPPERBOUND = 55.946233;
+	static final Double LOWERBOUND = 55.942617;
+	static final Double LEFTBOUND = -3.192473;
+	static final Double RIGHTBOUND = -3.184319;
+	
+	//Constants that give meaning to the indices of the args array
+	private static final int DAYINDX = 0;
+	private static final int MONTHINDX = 1;
+	private static final int YEARINDX = 2;
+	private static final int LATTINDX = 3;
+	private static final int LONGINDX = 4;
+	private static final int SEEDINDX = 5;
+	private static final int PORTINDX = 6;
+	
+	static Random generator = new Random();
+	
+    public static void main(String[] args) {
+    	generator.setSeed(Integer.parseInt(args[SEEDINDX]));
+		
+		//create the client that will handle all server communication
+		ClientWrapper client = new Client(Integer.parseInt(args[PORTINDX]));
+		
+		Sensor start = new SensorNode("", Double.parseDouble(args[LONGINDX]),Double.parseDouble(args[LATTINDX]),0.0, "");
+		Pather p = new AStarPather();
+		Drone drone = new DevelopmentDrone(p, new TSPSolution(p), new StepLogger(p), new GeoJsonVisualiser(), client, generator, start, UPPERBOUND, LOWERBOUND, LEFTBOUND, RIGHTBOUND, 0.0003);
+		try {
+			ArrayList<Sensor> order = new ArrayList<Sensor>();
+			order = drone.Plan(start, args[DAYINDX], args[MONTHINDX], args[YEARINDX]);
+			drone.Fly(order, start);
+			drone.ProduceOutput(args[DAYINDX], args[MONTHINDX], args[YEARINDX]);
+		} catch (IOException | InterruptedException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
     }
 }

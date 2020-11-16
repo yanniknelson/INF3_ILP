@@ -2,7 +2,7 @@ package uk.ac.ed.inf.aqmaps;
 
 /**
  * 
- * Sensors are a special case of the Node class which includes sensor readings
+ * SensorNode is a minimum representation of the sensors that extends the Node class and implements the sensor interface
  * 
  * @author Yannik Nelson
  * @see Node

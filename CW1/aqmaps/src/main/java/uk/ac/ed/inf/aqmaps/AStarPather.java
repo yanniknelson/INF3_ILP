@@ -6,10 +6,82 @@ import java.util.HashMap;
 
 import org.javatuples.Pair;
 
+/**
+ * Astar implementation of the Pather interface
+ * 
+ * @author Yannik Nelson
+ *
+ */
 public class AStarPather implements Pather {
-
-	public AStarPather() {
-		// TODO Auto-generated constructor stub
+	
+	ArrayList<ArrayList<Location>> boundingBoxes;
+	HashMap<ArrayList<Location>, ArrayList<Location>> noFlyZones;
+	Double UPPERBOUND = 0.0;
+	Double LOWERBOUND = 0.0;
+	Double LEFTBOUND = 0.0;
+	Double RIGHTBOUND = 0.0;
+	Double STEPSIZE = 0.0;
+	
+	
+	public void SetNoFlyZones(ArrayList<ArrayList<Location>> noFlyZones) {
+		this.boundingBoxes = new ArrayList<ArrayList<Location>>();
+		this.noFlyZones = new HashMap<ArrayList<Location>, ArrayList<Location>>();
+		//for each noFlyZone find its bounding box, save it and save the no fly zone in the noFlyZones hashmap with the index of its bounding box
+		for (ArrayList<Location> z: noFlyZones) {
+			ArrayList<Location> temp = boundsFromLocationList(z);
+			this.boundingBoxes.add(temp);
+			this.noFlyZones.put(temp,  z);
+		}
+	}
+	
+	public void SetBounds(Double ub, Double lob, Double leb, Double rb) {
+		this.UPPERBOUND = ub;
+		this.LOWERBOUND = lob;
+		this.LEFTBOUND = leb;
+		this.RIGHTBOUND = rb;
+	}
+	
+	public void SetStepSize(Double ss) {
+		this.STEPSIZE = ss;
+	}
+	
+	/**
+	 * 
+	 * Takes in a list of points and returns the corners of their bounding box
+	 * 
+	 * @param pts List of points
+	 * @return ArrayList containing the four corners of the box that surrounds all the points
+	 */
+	static ArrayList<Location> boundsFromLocationList(ArrayList<Location> pts) {
+		//initialise the max and min longitudes and latitudes to those of the first point, this ensures they will converge on the correct values
+		Double north = pts.get(0).latitude();
+		Double south = pts.get(0).latitude();
+		Double east = pts.get(0).longitude();
+		Double west = pts.get(0).longitude();
+		
+		//run through the points and find the maximum and minimum longitude and latitude values
+		for (Location p: pts) {
+			if (p.longitude() > east) {
+				east = p.longitude();
+			}
+			if (p.longitude() < west) {
+				west = p.longitude();
+			}
+			if (p.latitude() > north) {
+				north = p.latitude();
+			}
+			if (p.latitude() < south) {
+				south = p.latitude();
+			}
+		}
+		//create the list of corner points
+		ArrayList<Location> ret = new ArrayList<>();
+		ret.add(new Node(west,north));
+		ret.add(new Node(east,north));
+		ret.add(new Node(east,south));
+		ret.add(new Node(west,south));
+		ret.add(new Node(west,north));
+		return ret;
 	}
 
 	@Override
@@ -21,7 +93,7 @@ public class AStarPather implements Pather {
 	 */
 	public ArrayList<Pair<Location, Integer>> path(Location start, Location end, Double tolerance) {
 		//Create a Comparator that will compare possible paths and return an order based on the total expected cost to get to the end Point
-		AStarNodeComparison comparator = new AStarNodeComparison(end, this);
+		AStarNodeComparison comparator = new AStarNodeComparison(end, this, this.STEPSIZE);
 		//List of all current possible paths (called branches due to the tree like nature of the search)
 		ArrayList<ArrayList<Pair<Location, Integer>>> branches = new ArrayList<>();
 		//Create the first node (tree node) in the search tree containing just the current Node (or Node subclass)
@@ -72,6 +144,8 @@ public class AStarPather implements Pather {
 		}
 		
 	}
+	
+	
 
 	/**
 	 * 
@@ -83,7 +157,6 @@ public class AStarPather implements Pather {
 	 * @see com.mapbox.geojson.Point
 	 */
 	public Double findDistance(Location p1, Location p2) {
-		// TODO Auto-generated method stub
 		return Math.sqrt(Math.pow(p1.longitude() - p2.longitude(),2) + Math.pow(p1.latitude() - p2.latitude(),2));
 	}
 	
@@ -193,12 +266,12 @@ public class AStarPather implements Pather {
 		outerloop:
 		for (Integer i = 0 ; i < 360; i += 5) {
 			//find the new longitude and latitude and gives up on the Point at this angle if the Point will be outside the designated flying area
-			Double lon = node.longitude() + Drone.STEPSIZE * Math.cos(Math.toRadians(i));
-			if (lon > Drone.RIGHTBOUND || lon < Drone.LEFTBOUND) {
+			Double lon = node.longitude() + STEPSIZE * Math.cos(Math.toRadians(i));
+			if (lon > RIGHTBOUND || lon < LEFTBOUND) {
 				continue;
 			}
-			Double lat = node.latitude() + Drone.STEPSIZE * Math.sin(Math.toRadians(i));
-			if (lat > Drone.UPPERBOUND || lat < Drone.LOWERBOUND) {
+			Double lat = node.latitude() + STEPSIZE * Math.sin(Math.toRadians(i));
+			if (lat > UPPERBOUND || lat < LOWERBOUND) {
 				continue;
 			}
 			
@@ -214,10 +287,10 @@ public class AStarPather implements Pather {
 			//If the point will be in the designated area then we check if the point is inside or would intersect the sides of any of the no fly zones bounding boxes
 			//If either of those is the case we then check if the line from the current point to the point being created intersects any of the sides of the no fly zone
 			//If the line does intersect we give up on the Point at this angle
-			for (ArrayList<Location> b: Drone.boundingBoxes) {
+			for (ArrayList<Location> b: boundingBoxes) {
 				if ((lon < b.get(2).longitude() && lon > b.get(0).longitude() && lat < b.get(0).latitude() && lat > b.get(2).latitude()) || intersect(node, loc, b.get(0), b.get(1)) || intersect(node, loc, b.get(1), b.get(2)) || intersect(node, loc, b.get(2), b.get(3)) || intersect(node, loc, b.get(3), b.get(4))) {
 					//need to do more detailed check
-					ArrayList<Location> outline = Drone.noFlyZones.get(b);
+					ArrayList<Location> outline = noFlyZones.get(b);
 					for (Integer j = 1; j < outline.size(); j++) {
 						if (intersect(node, loc, outline.get(j-1), outline.get(j))) {
 							continue outerloop;
@@ -244,13 +317,15 @@ class AStarNodeComparison implements Comparator<ArrayList<Pair<Location, Integer
 	
 	Location goal;
 	Pather p;
+	Double STEPSIZE;
 	/**
 	 * 
 	 * @param goal The desired destination Node. This is required to calculate the cost and cannot be passed in at time of comparison
 	 */
-	AStarNodeComparison(Location goal, Pather p){
+	AStarNodeComparison(Location goal, Pather p, Double ss){
 		this.goal = goal;
 		this.p = p;
+		this.STEPSIZE = ss;
 	}
 	
 	/**
@@ -275,6 +350,6 @@ class AStarNodeComparison implements Comparator<ArrayList<Pair<Location, Integer
 	 * @return The exact number of expected steps if the Drone could move to the goal in a straight line as a Double
 	 */
 	Double getHeuristic(Location a){
-		return p.findDistance(a, this.goal)/Drone.STEPSIZE;
+		return p.findDistance(a, this.goal)/STEPSIZE;
 	}
 }

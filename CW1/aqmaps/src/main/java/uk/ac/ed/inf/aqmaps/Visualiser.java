@@ -30,7 +30,7 @@ interface Visualiser {
 	void AddFlightPath(ArrayList<Pair<Location, Integer>> path);
 	
 	/**
-	 * Will save the GeoJson of the internal feature list to the specified path
+	 * Will save the visualisation of the internal feature list to the specified path (Note the path must end in the desired file format)
 	 * @param filePath Path to save the visualisation to
 	 */
 	void OuputVisualisation(String filePath);

@@ -81,45 +81,6 @@ class Client implements ClientWrapper{
 	private static Type listType = new TypeToken<ArrayList<SensorNode>>() {}.getType();
 	
 	/**
-	 * 
-	 * Takes in a list of points and returns the corners of their bounding box
-	 * 
-	 * @param pts List of points
-	 * @return ArrayList containing the four corners of the box that surrounds all the points
-	 */
-	static ArrayList<Location> boundsFromPointsList(ArrayList<Location> pts) {
-		//initialise the max and min longitudes and latitudes to those of the first point, this ensures they will converge on the correct values
-		Double north = pts.get(0).latitude();
-		Double south = pts.get(0).latitude();
-		Double east = pts.get(0).longitude();
-		Double west = pts.get(0).longitude();
-		
-		//run through the points and find the maximum and minimum longitude and latitude values
-		for (Location p: pts) {
-			if (p.longitude() > east) {
-				east = p.longitude();
-			}
-			if (p.longitude() < west) {
-				west = p.longitude();
-			}
-			if (p.latitude() > north) {
-				north = p.latitude();
-			}
-			if (p.latitude() < south) {
-				south = p.latitude();
-			}
-		}
-		//create the list of corner points
-		ArrayList<Location> ret = new ArrayList<>();
-		ret.add(new Node(west,north));
-		ret.add(new Node(east,north));
-		ret.add(new Node(east,south));
-		ret.add(new Node(west,south));
-		ret.add(new Node(west,north));
-		return ret;
-	}
-	
-	/**
 	 * The Client must be initialised with the port it will use to communicate with the server
 	 * 
 	 * @param port The port the client will use to communicate to the server
@@ -136,9 +97,8 @@ class Client implements ClientWrapper{
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public Pair<ArrayList<ArrayList<Location>>, HashMap<ArrayList<Location>, ArrayList<Location>>> getNoFly() throws IOException, InterruptedException {
-		ArrayList<ArrayList<Location>> boundingBoxes = new ArrayList<>();
-		HashMap<ArrayList<Location>, ArrayList<Location>> noFlyZones = new HashMap<>();
+	public ArrayList<ArrayList<Location>> getNoFly() throws IOException, InterruptedException {
+		ArrayList<ArrayList<Location>> noFlyZones = new ArrayList<>();
 		//sends a request for the no-fly-zones GeoJson and returns the body of the response
 		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(baseURL + "buildings/no-fly-zones.geojson")).build();
 		String noFlyGeoJson = client.send(request, BodyHandlers.ofString()).body();
@@ -148,11 +108,9 @@ class Client implements ClientWrapper{
 			for (Point p: t) {
 				z.add(new Node(p.longitude(), p.latitude()));
 			}
-			ArrayList<Location> b = boundsFromPointsList(z);
-			boundingBoxes.add(b);
-			noFlyZones.put(b, z);
+			noFlyZones.add(z);
 		}
-		return new Pair<ArrayList<ArrayList<Location>>, HashMap<ArrayList<Location>, ArrayList<Location>>>(boundingBoxes, noFlyZones);
+		return noFlyZones;
 	}
 	
 	/**

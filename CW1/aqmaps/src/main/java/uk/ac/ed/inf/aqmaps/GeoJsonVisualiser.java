@@ -111,17 +111,20 @@ class GeoJsonVisualiser implements Visualiser {
 
 	@Override
 	public void AddFlightPath(ArrayList<Pair<Location, Integer>> path) {
-		System.out.println(String.format("Final Path Length: %s", path.size()));
+		//print details about the path adn linestring being output
+		System.out.println(String.format("Final Path Length: %d (%d Points added to LineString)", path.size()-1, path.size()));
+		//Convert all of the locations visited to points and add then to the line list in order
 		ArrayList<Point> line = new ArrayList<>();
 		for (Pair<Location, Integer> p: path) {
 			line.add(Point.fromLngLat(p.getValue0().longitude(), p.getValue0().latitude()));
 		}
-		
+		//convert the list of points into a linestring, then into a feature and add it to the features list
 		features.add(Feature.fromGeometry(LineString.fromLngLats(line)));
 	}
 
 	@Override
 	public void OuputVisualisation(String filePath) {
+		//convert the feature list into a FeatureCollection and save it's Json to the file relative to where the jar is being run
 		FeatureCollection coll = FeatureCollection.fromFeatures(features);
 		Path pathToOutput = Paths.get(System.getProperty("user.dir"), filePath);
 		try {

@@ -8,19 +8,33 @@ import me.tongfei.progressbar.ProgressBar;
 import me.tongfei.progressbar.ProgressBarBuilder;
 import me.tongfei.progressbar.ProgressBarStyle;
 
+
+/**
+ * 
+ * Ant Colony Optimisation and 2-Opt Heuristic hybrid implementation of TSPSolver the interface
+ * 
+ * @author Yannik Nelson
+ * @see TSPSolver
+ */
 class TSPSolution implements TSPSolver {
 
-	public TSPSolution() {
+	Pather pather;
+	
+	TSPSolution (Pather p){
+		this.pather = p;
 	}
 
 	@Override
 	public ArrayList<Sensor> solve(ArrayList<Sensor> sensors, Location start) {
-		//create The fully connected graph representation required for the Travelling Salesman Solution
+		//create The fully connected graph representation required for the Travelling Salesman Solution as precomputing
 		HashMap<Sensor, HashMap<Sensor, Integer>> connectionMatrix = ConnectionMatrix(sensors);
+		//perform The Ant Colony Optimisation using the precomputed graph and output its (over) estimated length
 		ArrayList<Sensor> order = ACOTSP(connectionMatrix, sensors);
 		System.out.println(String.format("Estimated Tour Step Cost After Ant Colony: %d", getCost(connectionMatrix, order)));
+		//perform the 2-Opt heuristic on the order produced by the Ant Colony Optimisation in order to try and fix bad cross overs and output the new estimated length
 		Two_OPT(connectionMatrix, order);
 		System.out.println(String.format("Estimated Tour Step Cost After 2-OPT: %d", getCost(connectionMatrix, order)));
+		//recenter the order so that the first 'Sensor' is the start position and return the ordering
 		Integer startIndex = order.indexOf(start);
 		ArrayList<Sensor> centeredOrder = new ArrayList<>();
 		for (Integer i = 0; i < order.size(); i++) {
@@ -56,17 +70,18 @@ class TSPSolution implements TSPSolver {
 					if (s1==s2) {
 						connectionLengths.get(s1).put(s2, 0);
 					} else {
-						connectionLengths.get(s1).put(s2, Drone.pather.path(s1,s2, 0.0002).size());
+						connectionLengths.get(s1).put(s2, pather.path(s1,s2, 0.0002).size());
 					}
 					//update the progress bar
 					pb.step();
 				}
 			}
-			//Display the connectionLengths Matrix highlighting that it is not a diagonal matrix by putting [] around pairs that would match but don't
 		}
+		//Display the connectionLengths Matrix highlighting that it is not a diagonal matrix by putting [] around pairs that would match but don't
 		System.out.println("Estimated Connection Step Costs:");
 		for (Sensor s1: destinations) {
 			for (Sensor s2: destinations) {
+				//if the symmetric item in the connection matrix to the one being printed is not the same value, put [] around it to highlight the difference
 				if (connectionLengths.get(s1).get(s2) != connectionLengths.get(s2).get(s1)) {
 					System.out.print(String.format("[%2d],", connectionLengths.get(s1).get(s2)));
 				} else {
@@ -139,7 +154,7 @@ class TSPSolution implements TSPSolver {
 				//Initialise a clone of the sensors list to be used as a list of the available Sensors for the ant (the sensors the ant hans't visited yet)
 				ArrayList<Sensor> possibleNext = (ArrayList<Sensor>) sensors.clone();
 				//Pick a random starting Sensor, add it to the visited list and remove it from the available sensors
-				Sensor firstSensor = sensors.get(Drone.generator.nextInt(n));
+				Sensor firstSensor = sensors.get(App.generator.nextInt(n));
 				ant.add(firstSensor);
 				possibleNext.remove(firstSensor);
 				//Build the ant's tour probabilistically 
@@ -152,7 +167,7 @@ class TSPSolution implements TSPSolver {
 						sumWeight +=  Math.pow(pheromone.get(current).get(s), a) * Math.pow((1.0/connectionMatrix.get(current).get(s)),b);
 					}
 					//Pick a random value between 0 and 1
-					Double p = Drone.generator.nextDouble();
+					Double p = App.generator.nextDouble();
 					Double cumProb = 0.0;
 					Sensor next = possibleNext.get(0);
 					//For each sensor, if the random value chosen is less than or equal to the cumulative probability of available Sensors so far, choose that sensor next
@@ -169,8 +184,6 @@ class TSPSolution implements TSPSolver {
 					ant.add(next);
 					possibleNext.remove(next);
 				}
-				//Once every sensor has been added, ensure the tour is complete by placing the initial sensor back at the end of the list
-//				ant.add(ant.get(0));
 			}
 			
 			//Apply the evaporation to the pheromones on the connections

@@ -2,10 +2,10 @@ package uk.ac.ed.inf.aqmaps;
 
 /**
  * 
- * A Node holds the important location information for a point of interest
+ * A Node holds the important location information for a point of interest implementing the Location interface
  * 
  * @author Yannik Nelson
- *
+ * @see Location
  */
 public class Node implements Location {
 	
