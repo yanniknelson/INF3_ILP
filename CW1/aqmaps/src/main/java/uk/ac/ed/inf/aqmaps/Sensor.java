@@ -13,7 +13,7 @@ interface Sensor extends Location{
 	 * 
 	 * @return The What3Words coordinates of the Sensor
 	 */
-	String getWhat3words();
+	String getWhat3Words();
 	
 	/**
 	 * 

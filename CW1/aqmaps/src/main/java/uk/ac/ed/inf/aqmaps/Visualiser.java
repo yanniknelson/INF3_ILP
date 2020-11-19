@@ -2,8 +2,6 @@ package uk.ac.ed.inf.aqmaps;
 
 import java.util.ArrayList;
 
-import org.javatuples.Pair;
-
 /**
  * Interface defining the minimum functions required of a module to visualise the drone's flight
  * 
@@ -27,7 +25,7 @@ interface Visualiser {
 	 * Will convert the flight path into a line and add that line to the internal feature list
 	 * @param path The flight path
 	 */
-	void AddFlightPath(ArrayList<Pair<Location, Integer>> path);
+	void AddFlightPath(ArrayList<Location> path);
 	
 	/**
 	 * Will save the visualisation of the internal feature list to the specified path (Note the path must end in the desired file format)

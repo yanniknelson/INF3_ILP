@@ -2,9 +2,6 @@ package uk.ac.ed.inf.aqmaps;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-
-import java.util.Random;
 import org.javatuples.Pair;
 
 /**
@@ -16,34 +13,31 @@ import org.javatuples.Pair;
 public class DevelopmentDrone implements Drone{
 	
 	//Constant that defines the step size of the drone
-	final Double STEPSIZE;
+	private final Double STEPSIZE;
 	
-	//The random generator source;
-	Random generator = new Random();
 	//the client that will be used to get all of the needed info
-	ClientWrapper client;
+	private ClientWrapper client;
 	//Planning objects
-	Pather pather;
-	TSPSolver tsp;
+	private Pather pather;
+	private TSPSolver tsp;
 	//Logging and visualising objects
-	Logger logger;
-	Visualiser vis;
+	private Logger logger;
+	private Visualiser vis;
 	
-	public DevelopmentDrone(Pather p, TSPSolver t, Logger l, Visualiser v, ClientWrapper c, Random g, Location start, Double ub, Double lob, Double leb, Double rb, Double ss) {
+	public DevelopmentDrone(Pather p, TSPSolver t, Logger l, Visualiser v, ClientWrapper c, Location start, Double ub, Double lob, Double leb, Double rb, Double ss) {
 		this.STEPSIZE = ss;
 		this.pather = p;
-		this.pather.SetBounds(ub, lob, leb, rb);
-		this.pather.SetStepSize(this.STEPSIZE);
+		this.pather.setBounds(ub, lob, leb, rb);
+		this.pather.setStepSize(this.STEPSIZE);
 		this.tsp = t;
 		this.logger = l;
 		this.vis = v;
 		this.client = c;
-		this.generator = g;
 	}
 	
 	public ArrayList<Sensor> Plan(Sensor start, String day, String month, String year) throws IOException, InterruptedException {
 		//get the no fly zones and bonding boxes from the client
-		this.pather.SetNoFlyZones(client.getNoFly());
+		this.pather.setNoFlyZones(client.getNoFly());
 		//get the 
 		ArrayList<Sensor> destinations = client.getDestinations(day, month, year);
 		destinations.add(0, start);
@@ -101,7 +95,11 @@ public class DevelopmentDrone implements Drone{
 		//add all the visited sensors, unvisited sensors and the flight path to the visualisation
 		vis.AddVisitedSensors(visitedSensors);
 		vis.AddNotVisitedSensors(SensorsNotVisited);
-		vis.AddFlightPath(path);
+		ArrayList<Location> t = new ArrayList<>();
+		for (Pair<Location,Integer> p: path) {
+			t.add(p.getValue0());
+		}
+		vis.AddFlightPath(t);
 	}
 
 	public void ProduceOutput(String day, String month, String year) {

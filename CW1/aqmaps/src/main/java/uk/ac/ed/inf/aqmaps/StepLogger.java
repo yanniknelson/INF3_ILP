@@ -38,7 +38,7 @@ class StepLogger implements Logger {
 			if (j == route.size()-1) {
 				//if we're at the end by the sensor has no what3words value then that sensor is the start position and we have returned, add 'null' to the line, add the line to the outputLog and return success
 				//note this also means we don't have a linebreak on the last line of the log
-				if (sensor.getWhat3words().equals("")) {
+				if (sensor.getWhat3Words().equals("")) {
 					ln += "null";
 					outputLog += ln;
 					linenum++;
@@ -46,7 +46,7 @@ class StepLogger implements Logger {
 				}
 				//if we're at the end and we're in range of the desired sensor then add its what3words to the line otherwise add 'null'
 				if (pather.findDistance(route.get(route.size()-1).getValue0(), sensor) < 0.0002) {
-					ln += sensor.getWhat3words();
+					ln += sensor.getWhat3Words();
 				} else {
 					ln += "null";
 				}

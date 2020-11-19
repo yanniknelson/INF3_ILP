@@ -7,10 +7,6 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.util.ArrayList;
-import java.util.HashMap;
-
-import org.javatuples.Pair;
-
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.JsonDeserializationContext;
@@ -133,14 +129,14 @@ class Client implements ClientWrapper{
 	/**
 	 * Takes in a What3Words string and returns a Point at the corresponding location
 	 * 
-	 * @param Input A What3Words String
+	 * @param what3words A What3Words String
 	 * @return Point at the location corresponding the passed in What3Words
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	public Location LocationFromWords(String Input) throws IOException, InterruptedException {
+	public Location LocationFromWords(String what3words) throws IOException, InterruptedException {
 		//split the What3Words into its three components
-		String words[] = Input.split("\\.",3);
+		String words[] = what3words.split("\\.",3);
 		//use the components to build the path to the details for that What3Words location on the server and send a request for it.
 		HttpRequest request = HttpRequest.newBuilder().uri(URI.create(baseURL +"/words/"+ words[0] + "/" + words[1] + "/" + words[2] + "/details.json")).build();
 		//get the JSON in the body of the response and use it to build a JsonObject, then getting it's coordinates attribute also as a JsonObject

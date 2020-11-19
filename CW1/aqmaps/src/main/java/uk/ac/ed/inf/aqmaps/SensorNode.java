@@ -35,7 +35,7 @@ class SensorNode extends Node implements Sensor {
 	/**
 	 * @return the what3words
 	 */
-	public String getWhat3words() {
+	public String getWhat3Words() {
 		return what3words;
 	}
 

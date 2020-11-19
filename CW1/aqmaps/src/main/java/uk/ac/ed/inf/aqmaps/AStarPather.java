@@ -14,16 +14,16 @@ import org.javatuples.Pair;
  */
 public class AStarPather implements Pather {
 	
-	ArrayList<ArrayList<Location>> boundingBoxes;
-	HashMap<ArrayList<Location>, ArrayList<Location>> noFlyZones;
-	Double UPPERBOUND = 0.0;
-	Double LOWERBOUND = 0.0;
-	Double LEFTBOUND = 0.0;
-	Double RIGHTBOUND = 0.0;
-	Double STEPSIZE = 0.0;
+	private ArrayList<ArrayList<Location>> boundingBoxes;
+	private HashMap<ArrayList<Location>, ArrayList<Location>> noFlyZones;
+	private Double UPPERBOUND = 0.0;
+	private Double LOWERBOUND = 0.0;
+	private Double LEFTBOUND = 0.0;
+	private Double RIGHTBOUND = 0.0;
+	private Double STEPSIZE = 0.0;
 	
 	
-	public void SetNoFlyZones(ArrayList<ArrayList<Location>> noFlyZones) {
+	public void setNoFlyZones(ArrayList<ArrayList<Location>> noFlyZones) {
 		this.boundingBoxes = new ArrayList<ArrayList<Location>>();
 		this.noFlyZones = new HashMap<ArrayList<Location>, ArrayList<Location>>();
 		//for each noFlyZone find its bounding box, save it and save the no fly zone in the noFlyZones hashmap with the index of its bounding box
@@ -34,14 +34,14 @@ public class AStarPather implements Pather {
 		}
 	}
 	
-	public void SetBounds(Double ub, Double lob, Double leb, Double rb) {
+	public void setBounds(Double ub, Double lob, Double leb, Double rb) {
 		this.UPPERBOUND = ub;
 		this.LOWERBOUND = lob;
 		this.LEFTBOUND = leb;
 		this.RIGHTBOUND = rb;
 	}
 	
-	public void SetStepSize(Double ss) {
+	public void setStepSize(Double ss) {
 		this.STEPSIZE = ss;
 	}
 	
@@ -52,7 +52,7 @@ public class AStarPather implements Pather {
 	 * @param pts List of points
 	 * @return ArrayList containing the four corners of the box that surrounds all the points
 	 */
-	static ArrayList<Location> boundsFromLocationList(ArrayList<Location> pts) {
+	private ArrayList<Location> boundsFromLocationList(ArrayList<Location> pts) {
 		//initialise the max and min longitudes and latitudes to those of the first point, this ensures they will converge on the correct values
 		Double north = pts.get(0).latitude();
 		Double south = pts.get(0).latitude();
@@ -113,7 +113,7 @@ public class AStarPather implements Pather {
 				//if the current path consists of only one node try and move once more, if it doesn't work pick a random next point move there and move back
 				if (current.size() == 1) {
 					if (triedAgain) {
-						HashMap<Location,Integer> deviation = Reachable(current.get(current.size()-1).getValue0(), new ArrayList<Location>());
+						HashMap<Location,Integer> deviation = reachable(current.get(current.size()-1).getValue0(), new ArrayList<Location>());
 						ArrayList<Location> deviationNodes = new ArrayList<Location>(deviation.keySet());
 						current.add(new Pair<Location,Integer>(deviationNodes.get(0), deviation.get(deviationNodes.get(0))));
 						current.add(current.get(0));
@@ -125,7 +125,7 @@ public class AStarPather implements Pather {
 				}
 			}
 			//otherwise get the list of next possible points, use them to create the next possible branches and add them all to the branches list
-			HashMap<Location, Integer> available = Reachable(current.get(current.size()-1).getValue0(), visited);
+			HashMap<Location, Integer> available = reachable(current.get(current.size()-1).getValue0(), visited);
 			ArrayList<Location> nodes = new ArrayList<Location>(available.keySet());
 			//remember to remove the branch we just expanded
 			branches.remove(current);
@@ -169,7 +169,7 @@ public class AStarPather implements Pather {
 	 * @param c End of the line segment
 	 * @return Boolean representing if point b is on the line segment.
 	 */
-	static boolean onSegment(Location a, Location b, Location c) { 
+	private boolean onSegment(Location a, Location b, Location c) { 
 		if (b.longitude() <= Math.max(a.longitude(), c.longitude()) && b.longitude() >= Math.min(a.longitude(), c.longitude()) && 
 	            b.latitude() <= Math.max(a.latitude(), c.latitude()) && b.latitude() >= Math.min(a.latitude(), c.latitude())) {
 			return true; 
@@ -190,7 +190,7 @@ public class AStarPather implements Pather {
 	 * @param c	Third Point
 	 * @return Integer corresponding to the orientation of the three passed in points.
 	 */
-	static int orientation(Location a, Location b, Location c) { 
+	private int orientation(Location a, Location b, Location c) { 
 	        Double val = (b.latitude() - a.latitude()) * (c.longitude() - b.longitude()) - (c.latitude() - b.latitude()) * (b.longitude() - a.longitude()); 
 	        return val.compareTo(0.0);
 	} 
@@ -205,7 +205,7 @@ public class AStarPather implements Pather {
      * @param d End of second line segment
      * @return Boolean representing whether the line segments intersect.
      */
-	static boolean intersect(Location a, Location b, Location c, Location d) { 
+	private boolean testIntersect(Location a, Location b, Location c, Location d) { 
 	        //Find the four orientations needed for  
 	        //general and special cases 
 	        int o1 = orientation(a, b, c); 
@@ -259,7 +259,7 @@ public class AStarPather implements Pather {
 	 * @param visited ArrayList of Node (or node subclass) that have already been visited and thus we don't want to be too close to.
 	 * @return mapping of possible next step from the current node to their angle relative to the current node.
 	 */
-	public HashMap<Location, Integer> Reachable(Location node, ArrayList<Location> visited) {
+	public HashMap<Location, Integer> reachable(Location node, ArrayList<Location> visited) {
 		HashMap<Location, Integer> nextPoints = new HashMap<>();
 		
 		//for all possible angles around the current point (the drone can only move at angles divisible by 5)
@@ -288,11 +288,11 @@ public class AStarPather implements Pather {
 			//If either of those is the case we then check if the line from the current point to the point being created intersects any of the sides of the no fly zone
 			//If the line does intersect we give up on the Point at this angle
 			for (ArrayList<Location> b: boundingBoxes) {
-				if ((lon < b.get(2).longitude() && lon > b.get(0).longitude() && lat < b.get(0).latitude() && lat > b.get(2).latitude()) || intersect(node, loc, b.get(0), b.get(1)) || intersect(node, loc, b.get(1), b.get(2)) || intersect(node, loc, b.get(2), b.get(3)) || intersect(node, loc, b.get(3), b.get(4))) {
+				if ((lon < b.get(2).longitude() && lon > b.get(0).longitude() && lat < b.get(0).latitude() && lat > b.get(2).latitude()) || testIntersect(node, loc, b.get(0), b.get(1)) || testIntersect(node, loc, b.get(1), b.get(2)) || testIntersect(node, loc, b.get(2), b.get(3)) || testIntersect(node, loc, b.get(3), b.get(4))) {
 					//need to do more detailed check
 					ArrayList<Location> outline = noFlyZones.get(b);
 					for (Integer j = 1; j < outline.size(); j++) {
-						if (intersect(node, loc, outline.get(j-1), outline.get(j))) {
+						if (testIntersect(node, loc, outline.get(j-1), outline.get(j))) {
 							continue outerloop;
 						}
 					}
@@ -315,9 +315,9 @@ public class AStarPather implements Pather {
  */
 class AStarNodeComparison implements Comparator<ArrayList<Pair<Location, Integer>>>  {
 	
-	Location goal;
-	Pather p;
-	Double STEPSIZE;
+	private Location goal;
+	private Pather p;
+	private Double STEPSIZE;
 	/**
 	 * 
 	 * @param goal The desired destination Node. This is required to calculate the cost and cannot be passed in at time of comparison

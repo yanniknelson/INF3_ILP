@@ -2,9 +2,6 @@ package uk.ac.ed.inf.aqmaps;
 
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashMap;
-
-import org.javatuples.Pair;
 
 /**
  * 
@@ -47,7 +44,7 @@ interface ClientWrapper {
 	 * @throws IOException
 	 * @throws InterruptedException
 	 */
-	Location LocationFromWords(String Input) throws IOException, InterruptedException;
+	Location LocationFromWords(String what3words) throws IOException, InterruptedException;
 	
 	/**
 	 * 

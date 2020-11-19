@@ -5,8 +5,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 
-import org.javatuples.Pair;
-
 import com.mapbox.geojson.Feature;
 import com.mapbox.geojson.FeatureCollection;
 import com.mapbox.geojson.LineString;
@@ -32,7 +30,7 @@ class GeoJsonVisualiser implements Visualiser {
 	Feature getVisitedSensorFeature(Sensor sensor) {
 		//create the feature and add the location property with the value of the what3words location of the sensor
 		Feature sensorPoint = Feature.fromGeometry(Point.fromLngLat(sensor.longitude(), sensor.latitude()));
-		sensorPoint.addStringProperty("location", sensor.getWhat3words());
+		sensorPoint.addStringProperty("location", sensor.getWhat3Words());
 		//get the reading from the sensor and check if its valid based on the battery and the reading
 		//if it's not a valid reading set the rgb-string, marker-color and marker-symbol to the appropriate values
 		String value = sensor.getReading();
@@ -87,7 +85,7 @@ class GeoJsonVisualiser implements Visualiser {
 		//create the feature and add the location property with the value of the what3words location of the sensor
 		Feature sensorPoint = Feature.fromGeometry(Point.fromLngLat(sensor.longitude(), sensor.latitude()));
 		//set the appropriate properties
-		sensorPoint.addStringProperty("location", sensor.getWhat3words());
+		sensorPoint.addStringProperty("location", sensor.getWhat3Words());
 		sensorPoint.addStringProperty("rgb-string", "#aaaaaa");
 		sensorPoint.addStringProperty("marker-color", "#aaaaaa");
 		return sensorPoint;
@@ -110,13 +108,13 @@ class GeoJsonVisualiser implements Visualiser {
 	}
 
 	@Override
-	public void AddFlightPath(ArrayList<Pair<Location, Integer>> path) {
+	public void AddFlightPath(ArrayList<Location> path) {
 		//print details about the path adn linestring being output
 		System.out.println(String.format("Final Path Length: %d (%d Points added to LineString)", path.size()-1, path.size()));
 		//Convert all of the locations visited to points and add then to the line list in order
 		ArrayList<Point> line = new ArrayList<>();
-		for (Pair<Location, Integer> p: path) {
-			line.add(Point.fromLngLat(p.getValue0().longitude(), p.getValue0().latitude()));
+		for (Location p: path) {
+			line.add(Point.fromLngLat(p.longitude(), p.latitude()));
 		}
 		//convert the list of points into a linestring, then into a feature and add it to the features list
 		features.add(Feature.fromGeometry(LineString.fromLngLats(line)));
