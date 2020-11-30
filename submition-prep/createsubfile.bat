@@ -1,0 +1,12 @@
+call java -jar aqmaps.jar 01 01 2020 55.944425 -3.188396 5678 80
+call java -jar aqmaps.jar 02 02 2020 55.944425 -3.188396 5678 80
+call java -jar aqmaps.jar 03 03 2020 55.944425 -3.188396 5678 80
+call java -jar aqmaps.jar 04 04 2020 55.944425 -3.188396 5678 80
+call java -jar aqmaps.jar 05 05 2020 55.944425 -3.188396 5678 80
+call java -jar aqmaps.jar 06 06 2020 55.944425 -3.188396 5678 80
+call java -jar aqmaps.jar 07 07 2020 55.944425 -3.188396 5678 80
+call java -jar aqmaps.jar 08 08 2020 55.944425 -3.188396 5678 80
+call java -jar aqmaps.jar 09 09 2020 55.944425 -3.188396 5678 80
+call java -jar aqmaps.jar 10 10 2020 55.944425 -3.188396 5678 80
+call java -jar aqmaps.jar 11 11 2020 55.944425 -3.188396 5678 80
+call java -jar aqmaps.jar 12 12 2020 55.944425 -3.188396 5678 80
