@@ -63,8 +63,8 @@ public class DevelopmentDrone implements Drone{
 		path.add(new Pair<Location, Integer>(destinations.get(0),0));
 		//the limit variable indicates whether the step limit has been reached
 		Integer limit = -1;
-		ProgressBarBuilder pbb = new ProgressBarBuilder().setStyle(ProgressBarStyle.ASCII).setUpdateIntervalMillis(1).setInitialMax(destinations.size()+1).setTaskName("Flying");
-		try (var pb = pbb.build()){
+		//ProgressBarBuilder pbb = new ProgressBarBuilder().setStyle(ProgressBarStyle.ASCII).setUpdateIntervalMillis(1).setInitialMax(destinations.size()+1).setTaskName("Flying");
+		//try (var pb = pbb.build()){
 			for (Integer i = 1; i < destinations.size(); i++) {
 				//for every sensor, move from the last point in the path and try to get within range of the sensor
 				var route = pather.path(path.get(path.size()-1).getValue0(), destinations.get(i), 0.0002);
@@ -87,7 +87,7 @@ public class DevelopmentDrone implements Drone{
 				if (limit > -1) {
 					break;
 				}
-				pb.step();
+				//pb.step();
 			}
 			//if we've not reached the step limit the attempt to return to the starting position in the same manner as before simply with a higher tollerance
 			if (limit == -1) {
@@ -99,8 +99,8 @@ public class DevelopmentDrone implements Drone{
 				route.remove(0);
 				path.addAll(route);
 			}
-			pb.step();
-		}
+			//pb.step();
+		//}
 		//add all the visited sensors, unvisited sensors and the flight path to the visualisation
 		vis.AddVisitedSensors(visitedSensors);
 		vis.AddNotVisitedSensors(SensorsNotVisited);
