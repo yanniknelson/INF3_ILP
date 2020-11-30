@@ -344,11 +344,11 @@ class AStarNodeComparison implements Comparator<ArrayList<Pair<Location, Integer
 		//To try and keep the heuristic consistent I assume the realistic length will be the ceiling of the heuristic (the distance to the point divided by the step size)
 		//I then divide those by their actual heuristic and take the minimum of the two values to find the amount i can scale the heuristics to keep them consistent (based on the above assumption) 
 		Double scale = Math.min(Math.ceil(ah)/ah, Math.ceil(bh)/bh);
-		Double fa = a.size() - 1 + ah*scale*(1/a.size());
+		Double fa = a.size() - 1 + ah*scale;
 		if (Double.isNaN(scale)) {
 			scale = 1.0;
 		}
-		return fa.compareTo(b.size() - 1 + bh*scale*(1/b.size()));
+		return fa.compareTo(b.size() - 1 + bh*scale);
 	}
 	
 	/**
