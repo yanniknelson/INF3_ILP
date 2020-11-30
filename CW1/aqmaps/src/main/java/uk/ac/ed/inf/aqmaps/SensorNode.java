@@ -1,14 +1,12 @@
 package uk.ac.ed.inf.aqmaps;
 
-import com.mapbox.geojson.Point;
-
 /**
  * 
- * Sensors are a special case of the Node class which includes sensor readings
+ * SensorNode is a minimum representation of the sensors that extends the Node class and implements the sensor interface
  * 
  * @author Yannik Nelson
- * @version 1.0
  * @see Node
+ * @see Sensor
  */
 class SensorNode extends Node implements Sensor {
 	private String what3words;
@@ -22,8 +20,8 @@ class SensorNode extends Node implements Sensor {
 	 * @param battery The battery level of the sensor
 	 * @param reading The reading of the sensor, can be a value, can be "null" or "NaN"
 	 */
-	SensorNode(String what3words, Point location, Double battery, String reading) {
-		super(location);
+	SensorNode(String what3words, Double longitude, Double latitude, Double battery, String reading) {
+		super(longitude, latitude);
 		this.what3words = what3words;
 		this.battery = battery;
 		this.reading = reading;
@@ -31,13 +29,13 @@ class SensorNode extends Node implements Sensor {
 	
 	@Override
 	public String toString() {
-		return "Sensor: {"+ what3words + ", " + Double.toString(this.getLocation().longitude()) + ", " + Double.toString(this.getLocation().latitude()) + ", " +  Double.toString(battery)  + ", " +  reading  + "}";
+		return "Sensor: {"+ what3words + ", " + Double.toString(this.longitude()) + ", " + Double.toString(this.latitude()) + ", " +  Double.toString(battery)  + ", " +  reading  + "}";
 	}
 
 	/**
 	 * @return the what3words
 	 */
-	public String getWhat3words() {
+	public String getWhat3Words() {
 		return what3words;
 	}
 

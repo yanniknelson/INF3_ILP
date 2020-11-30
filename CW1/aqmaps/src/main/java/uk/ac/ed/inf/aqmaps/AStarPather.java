@@ -6,12 +6,82 @@ import java.util.HashMap;
 
 import org.javatuples.Pair;
 
-import com.mapbox.geojson.Point;
-
+/**
+ * Astar implementation of the Pather interface
+ * 
+ * @author Yannik Nelson
+ *
+ */
 public class AStarPather implements Pather {
-
-	public AStarPather() {
-		// TODO Auto-generated constructor stub
+	
+	private ArrayList<ArrayList<Location>> boundingBoxes;
+	private HashMap<ArrayList<Location>, ArrayList<Location>> noFlyZones;
+	private Double UPPERBOUND = 0.0;
+	private Double LOWERBOUND = 0.0;
+	private Double LEFTBOUND = 0.0;
+	private Double RIGHTBOUND = 0.0;
+	private Double STEPSIZE = 0.0;
+	
+	
+	public void setNoFlyZones(ArrayList<ArrayList<Location>> noFlyZones) {
+		this.boundingBoxes = new ArrayList<ArrayList<Location>>();
+		this.noFlyZones = new HashMap<ArrayList<Location>, ArrayList<Location>>();
+		//for each noFlyZone find its bounding box, save it and save the no fly zone in the noFlyZones hashmap with the index of its bounding box
+		for (ArrayList<Location> z: noFlyZones) {
+			ArrayList<Location> temp = boundsFromLocationList(z);
+			this.boundingBoxes.add(temp);
+			this.noFlyZones.put(temp,  z);
+		}
+	}
+	
+	public void setBounds(Double ub, Double lob, Double leb, Double rb) {
+		this.UPPERBOUND = ub;
+		this.LOWERBOUND = lob;
+		this.LEFTBOUND = leb;
+		this.RIGHTBOUND = rb;
+	}
+	
+	public void setStepSize(Double ss) {
+		this.STEPSIZE = ss;
+	}
+	
+	/**
+	 * 
+	 * Takes in a list of points and returns the corners of their bounding box
+	 * 
+	 * @param pts List of points
+	 * @return ArrayList containing the four corners of the box that surrounds all the points
+	 */
+	private ArrayList<Location> boundsFromLocationList(ArrayList<Location> pts) {
+		//initialise the max and min longitudes and latitudes to those of the first point, this ensures they will converge on the correct values
+		Double north = pts.get(0).latitude();
+		Double south = pts.get(0).latitude();
+		Double east = pts.get(0).longitude();
+		Double west = pts.get(0).longitude();
+		
+		//run through the points and find the maximum and minimum longitude and latitude values
+		for (Location p: pts) {
+			if (p.longitude() > east) {
+				east = p.longitude();
+			}
+			if (p.longitude() < west) {
+				west = p.longitude();
+			}
+			if (p.latitude() > north) {
+				north = p.latitude();
+			}
+			if (p.latitude() < south) {
+				south = p.latitude();
+			}
+		}
+		//create the list of corner points
+		ArrayList<Location> ret = new ArrayList<>();
+		ret.add(new Node(west,north));
+		ret.add(new Node(east,north));
+		ret.add(new Node(east,south));
+		ret.add(new Node(west,south));
+		ret.add(new Node(west,north));
+		return ret;
 	}
 
 	@Override
@@ -23,27 +93,27 @@ public class AStarPather implements Pather {
 	 */
 	public ArrayList<Pair<Location, Integer>> path(Location start, Location end, Double tolerance) {
 		//Create a Comparator that will compare possible paths and return an order based on the total expected cost to get to the end Point
-		AStarNodeComparison comparator = new AStarNodeComparison(end, this);
+		var comparator = new AStarNodeComparison(end, this, this.STEPSIZE);
 		//List of all current possible paths (called branches due to the tree like nature of the search)
 		ArrayList<ArrayList<Pair<Location, Integer>>> branches = new ArrayList<>();
 		//Create the first node (tree node) in the search tree containing just the current Node (or Node subclass)
-		ArrayList<Pair<Location,Integer>> base = new ArrayList<Pair<Location,Integer>>();
-		Boolean triedAgain = false;
+		var base = new ArrayList<Pair<Location,Integer>>();
+		var triedAgain = false;
 		base.add(new Pair<Location,Integer>(start, -1));
 		//Add the first (tree) node to the branches list
 		branches.add(base);
 		//initialise the visited list to and empty ArrayList
 		ArrayList<Location> visited = new ArrayList<>();
 		//Iteratively expand upon the current best paths, then ordering the new branches and repeating until the destination is reached
-		while (true) {
+		while (branches.size() > 0) {
 			//get the current best path
 			ArrayList<Pair<Location, Integer>> current = branches.get(0);
 			//if the current best path is within 0.0002 degrees of the destination we've reached the destination so return the path
-			if (findDistance(current.get(current.size()-1).getValue0().getLocation(), end.getLocation()) < tolerance ) {
+			if (findDistance(current.get(current.size()-1).getValue0(), end) < tolerance ) {
 				//if the current path consists of only one node try and move once more, if it doesn't work pick a random next point move there and move back
 				if (current.size() == 1) {
 					if (triedAgain) {
-						HashMap<Location,Integer> deviation = Reachable(current.get(current.size()-1).getValue0(), new ArrayList<Location>());
+						HashMap<Location,Integer> deviation = reachable(current.get(current.size()-1).getValue0(), new ArrayList<Location>());
 						ArrayList<Location> deviationNodes = new ArrayList<Location>(deviation.keySet());
 						current.add(new Pair<Location,Integer>(deviationNodes.get(0), deviation.get(deviationNodes.get(0))));
 						current.add(current.get(0));
@@ -55,25 +125,31 @@ public class AStarPather implements Pather {
 				}
 			}
 			//otherwise get the list of next possible points, use them to create the next possible branches and add them all to the branches list
-			HashMap<Location, Integer> available = Reachable(current.get(current.size()-1).getValue0(), visited);
+			HashMap<Location, Integer> available = reachable(current.get(current.size()-1).getValue0(), visited);
 			ArrayList<Location> nodes = new ArrayList<Location>(available.keySet());
 			//remember to remove the branch we just expanded
-			branches.remove(current);
+			if (!triedAgain) {
+				branches.remove(current);
+			}
 			for (Location n: nodes) {
 				if (visited.contains(n)) {
 					continue;
 				}
-				ArrayList<Pair<Location,Integer>> temp = (ArrayList<Pair<Location, Integer>>) current.clone();
+				var temp = (ArrayList<Pair<Location, Integer>>) current.clone();
 				temp.add(new Pair<Location,Integer>(n, available.get(n)));
 				branches.add(temp);
 			}
 			//sort the new branches based on their expected cost
 			branches.sort(comparator);
 			//add the node we just expanded to the visited list
-			visited.add(current.get(current.size()-1).getValue0());
+			if (!triedAgain) {
+				visited.add(current.get(current.size()-1).getValue0());
+			}
 		}
-		
+		return base;
 	}
+	
+	
 
 	/**
 	 * 
@@ -84,8 +160,7 @@ public class AStarPather implements Pather {
 	 * @return The Distance between the passed in points as a Double.
 	 * @see com.mapbox.geojson.Point
 	 */
-	public Double findDistance(Point p1, Point p2) {
-		// TODO Auto-generated method stub
+	public Double findDistance(Location p1, Location p2) {
 		return Math.sqrt(Math.pow(p1.longitude() - p2.longitude(),2) + Math.pow(p1.latitude() - p2.latitude(),2));
 	}
 	
@@ -98,7 +173,7 @@ public class AStarPather implements Pather {
 	 * @param c End of the line segment
 	 * @return Boolean representing if point b is on the line segment.
 	 */
-	static boolean onSegment(Point a, Point b, Point c) { 
+	private boolean onSegment(Location a, Location b, Location c) { 
 		if (b.longitude() <= Math.max(a.longitude(), c.longitude()) && b.longitude() >= Math.min(a.longitude(), c.longitude()) && 
 	            b.latitude() <= Math.max(a.latitude(), c.latitude()) && b.latitude() >= Math.min(a.latitude(), c.latitude())) {
 			return true; 
@@ -119,7 +194,7 @@ public class AStarPather implements Pather {
 	 * @param c	Third Point
 	 * @return Integer corresponding to the orientation of the three passed in points.
 	 */
-	static int orientation(Point a, Point b, Point c) { 
+	private int orientation(Location a, Location b, Location c) { 
 	        Double val = (b.latitude() - a.latitude()) * (c.longitude() - b.longitude()) - (c.latitude() - b.latitude()) * (b.longitude() - a.longitude()); 
 	        return val.compareTo(0.0);
 	} 
@@ -134,7 +209,7 @@ public class AStarPather implements Pather {
      * @param d End of second line segment
      * @return Boolean representing whether the line segments intersect.
      */
-	static boolean intersect(Point a, Point b, Point c, Point d) { 
+	private boolean testIntersect(Location a, Location b, Location c, Location d) { 
 	        //Find the four orientations needed for  
 	        //general and special cases 
 	        int o1 = orientation(a, b, c); 
@@ -188,27 +263,27 @@ public class AStarPather implements Pather {
 	 * @param visited ArrayList of Node (or node subclass) that have already been visited and thus we don't want to be too close to.
 	 * @return mapping of possible next step from the current node to their angle relative to the current node.
 	 */
-	public HashMap<Location, Integer> Reachable(Location node, ArrayList<Location> visited) {
+	private HashMap<Location, Integer> reachable(Location node, ArrayList<Location> visited) {
 		HashMap<Location, Integer> nextPoints = new HashMap<>();
-		Point location = node.getLocation();
+		
 		//for all possible angles around the current point (the drone can only move at angles divisible by 5)
 		outerloop:
 		for (Integer i = 0 ; i < 360; i += 5) {
 			//find the new longitude and latitude and gives up on the Point at this angle if the Point will be outside the designated flying area
-			Double lon = location.longitude() + Drone.STEPSIZE * Math.cos(Math.toRadians(i));
-			if (lon > Drone.RIGHTBOUND || lon < Drone.LEFTBOUND) {
+			var lon = node.longitude() + STEPSIZE * Math.cos(Math.toRadians(i));
+			if (lon > RIGHTBOUND || lon < LEFTBOUND) {
 				continue;
 			}
-			Double lat = location.latitude() + Drone.STEPSIZE * Math.sin(Math.toRadians(i));
-			if (lat > Drone.UPPERBOUND || lat < Drone.LOWERBOUND) {
+			var lat = node.latitude() + STEPSIZE * Math.sin(Math.toRadians(i));
+			if (lat > UPPERBOUND || lat < LOWERBOUND) {
 				continue;
 			}
 			
-			Point loc = Point.fromLngLat(lon,lat);
+			var loc = new Node(lon,lat);
 			
 			//If the new point is less than a step away from any of the visited points then give up on the Point at this angle
 			for (Location p: visited) {
-				if (findDistance(p.getLocation(), loc) < 0.0003) {
+				if (findDistance(p, loc) < 0.0003) {
 					continue outerloop;
 				}
 			}
@@ -216,12 +291,12 @@ public class AStarPather implements Pather {
 			//If the point will be in the designated area then we check if the point is inside or would intersect the sides of any of the no fly zones bounding boxes
 			//If either of those is the case we then check if the line from the current point to the point being created intersects any of the sides of the no fly zone
 			//If the line does intersect we give up on the Point at this angle
-			for (ArrayList<Point> b: Drone.boundingBoxes) {
-				if ((lon < b.get(2).longitude() && lon > b.get(0).longitude() && lat < b.get(0).latitude() && lat > b.get(2).latitude()) || intersect(location, loc, b.get(0), b.get(1)) || intersect(location, loc, b.get(1), b.get(2)) || intersect(location, loc, b.get(2), b.get(3)) || intersect(location, loc, b.get(3), b.get(4))) {
+			for (var b: boundingBoxes) {
+				if ((lon < b.get(2).longitude() && lon > b.get(0).longitude() && lat < b.get(0).latitude() && lat > b.get(2).latitude()) || testIntersect(node, loc, b.get(0), b.get(1)) || testIntersect(node, loc, b.get(1), b.get(2)) || testIntersect(node, loc, b.get(2), b.get(3)) || testIntersect(node, loc, b.get(3), b.get(4))) {
 					//need to do more detailed check
-					ArrayList<Point> outline = Drone.noFlyZones.get(b);
+					var outline = noFlyZones.get(b);
 					for (Integer j = 1; j < outline.size(); j++) {
-						if (intersect(location, loc, outline.get(j-1), outline.get(j))) {
+						if (testIntersect(node, loc, outline.get(j-1), outline.get(j))) {
 							continue outerloop;
 						}
 					}
@@ -229,7 +304,7 @@ public class AStarPather implements Pather {
 			}
 			
 			//If none of the checks have triggered then the current point is valid so we add it to the mapping to be returned with its angle
-			nextPoints.put(new Node(loc),i);
+			nextPoints.put(loc,i);
 		}
 		return nextPoints;
 	}
@@ -244,15 +319,17 @@ public class AStarPather implements Pather {
  */
 class AStarNodeComparison implements Comparator<ArrayList<Pair<Location, Integer>>>  {
 	
-	Location goal;
-	Pather p;
+	private Location goal;
+	private Pather p;
+	private Double STEPSIZE;
 	/**
 	 * 
 	 * @param goal The desired destination Node. This is required to calculate the cost and cannot be passed in at time of comparison
 	 */
-	AStarNodeComparison(Location goal, Pather p){
+	AStarNodeComparison(Location goal, Pather p, Double ss){
 		this.goal = goal;
 		this.p = p;
+		this.STEPSIZE = ss;
 	}
 	
 	/**
@@ -270,12 +347,13 @@ class AStarNodeComparison implements Comparator<ArrayList<Pair<Location, Integer
 		Double fa = a.size() - 1 + ah*scale;
 		return fa.compareTo(b.size() - 1 + bh*scale);
 	}
+	
 	/**
 	 * 
 	 * @param goal The desired destination Node
 	 * @return The exact number of expected steps if the Drone could move to the goal in a straight line as a Double
 	 */
 	Double getHeuristic(Location a){
-		return p.findDistance(a.getLocation(), this.goal.getLocation())/Drone.STEPSIZE;
+		return p.findDistance(a, this.goal)/STEPSIZE;
 	}
 }
