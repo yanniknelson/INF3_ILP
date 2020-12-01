@@ -1,4 +1,4 @@
-	package uk.ac.ed.inf.aqmaps;
+package uk.ac.ed.inf.aqmaps;
 
 import java.util.ArrayList;
 import java.util.Collections;
@@ -62,8 +62,8 @@ class TSPSolution implements TSPSolver {
 			connectionMatrix.put(s, new HashMap<Sensor, Integer>());
 		}
 		//Create a new progress bar
-		//ProgressBarBuilder pbb = new ProgressBarBuilder().setStyle(ProgressBarStyle.ASCII).setUpdateIntervalMillis(1).setInitialMax(destinations.size()*destinations.size()).setTaskName("Building Connections");
-		//try (var pb = pbb.build()){
+//		ProgressBarBuilder pbb = new ProgressBarBuilder().setStyle(ProgressBarStyle.ASCII).setUpdateIntervalMillis(1).setInitialMax(destinations.size()*destinations.size()).setTaskName("Building Connections");
+//		try (var pb = pbb.build()){
 			//For every combination of Sensors (where order matters) 
 			for (var s1: destinations) {
 				for (var s2: destinations) {
@@ -77,10 +77,10 @@ class TSPSolution implements TSPSolver {
 						connectionMatrix.get(s1).put(s2, pather.path(s1,s2, 0.0002).size());
 					}
 					//update the progress bar
-					//pb.step();
+//					pb.step();
 				}
 			}
-		//}
+//		}
 //		//Display the connectionLengths Matrix highlighting that it is not a diagonal matrix by putting [] around pairs that would match but don't
 //		System.out.println("Estimated Connection Step Costs:");
 //		for (Sensor s1: destinations) {

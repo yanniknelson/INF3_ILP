@@ -14,13 +14,13 @@ import org.javatuples.Pair;
  */
 public class AStarPather implements Pather {
 	
-	private ArrayList<ArrayList<Location>> boundingBoxes;
-	private HashMap<ArrayList<Location>, ArrayList<Location>> noFlyZones;
+	private ArrayList<ArrayList<Location>> boundingBoxes = new ArrayList<ArrayList<Location>>();
+	private HashMap<ArrayList<Location>, ArrayList<Location>> noFlyZones = new HashMap<ArrayList<Location>, ArrayList<Location>>();
 	private Double UPPERBOUND = 0.0;
 	private Double LOWERBOUND = 0.0;
 	private Double LEFTBOUND = 0.0;
 	private Double RIGHTBOUND = 0.0;
-	private Double STEPSIZE = 0.0;
+	private Double STEPSIZE = 0.0003;
 	
 	
 	public void setNoFlyZones(ArrayList<ArrayList<Location>> noFlyZones) {
@@ -345,6 +345,9 @@ class AStarNodeComparison implements Comparator<ArrayList<Pair<Location, Integer
 		//I then divide those by their actual heuristic and take the minimum of the two values to find the amount i can scale the heuristics to keep them consistent (based on the above assumption) 
 		Double scale = Math.min(Math.ceil(ah)/ah, Math.ceil(bh)/bh);
 		Double fa = a.size() - 1 + ah*scale;
+		if (Double.isNaN(scale)) {
+			scale = 1.0;
+		}
 		return fa.compareTo(b.size() - 1 + bh*scale);
 	}
 	
